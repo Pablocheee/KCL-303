@@ -1,0 +1,7 @@
+{
+  "name": "BitNet DiskStream Engine",
+  "description": "Ultra-low-resource ternary neural network inference engine with disk-streaming memory mapping and zero-multiplication arithmetic.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
