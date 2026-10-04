@@ -109,7 +109,7 @@ export const Neural303Visualizer: React.FC = () => {
             </div>
             <div>
               <div className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-900 flex items-center gap-2">
-                <span>Neural Hardware Synthesizer</span>
+                <span>NMX Hardware Synthesizer</span>
                 <span className="px-2 py-0.5 rounded bg-slate-800 text-emerald-400 text-[10px] font-bold border border-slate-700">
                   32-BIT DSP
                 </span>
