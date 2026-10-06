@@ -21,6 +21,7 @@ import {
   Disc,
 } from 'lucide-react';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 import { TB303FilterSection } from './TB303FilterSection';
 import { DualModeSequencer } from './DualModeSequencer';
 import { PresetManagerModal } from './PresetManagerModal';
@@ -30,6 +31,7 @@ import { WavExportModal } from './WavExportModal';
 import { liveRecorder } from '../engine/wav_recorder';
 
 export const Neural303Visualizer: React.FC = () => {
+  const { t, language } = useLanguage();
   const {
     isDspLive,
     toggleDsp,
@@ -99,7 +101,7 @@ export const Neural303Visualizer: React.FC = () => {
 
   return (
     <div className="w-full max-w-full space-y-4 font-mono">
-      {/* 1. Main Roland TB-303 Silver Faceplate & Master Deck */}
+      {/* 1. Main TB-303 Silver Faceplate & Master Deck */}
       <div className="bg-gradient-to-b from-slate-200 via-slate-300 to-slate-400 rounded-2xl p-3 sm:p-4 shadow-2xl border-4 border-slate-500 text-slate-900 space-y-3">
         {/* Master Control & DSP Toolbar */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pb-2 border-b-2 border-slate-500/60">
@@ -109,22 +111,41 @@ export const Neural303Visualizer: React.FC = () => {
             </div>
             <div>
               <div className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-900 flex items-center gap-2">
-                <span>NMX Hardware Synthesizer</span>
+                <span>{t('synthTitle')}</span>
                 <span className="px-2 py-0.5 rounded bg-slate-800 text-emerald-400 text-[10px] font-bold border border-slate-700">
-                  32-BIT DSP
+                  {t('dspBadge')}
                 </span>
               </div>
               <div className="text-[10px] sm:text-[11px] font-bold text-slate-700">
-                MICROSCOPIC ELECTRON TRANSPORT & JOHNSON-NYQUIST SYNTHESIS
+                {t('synthSubtitle')}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="px-2.5 py-1 rounded bg-slate-900 text-slate-300 font-bold border border-slate-700 flex items-center gap-2 shadow-sm">
-              <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
-              <span>{isPlaying ? 'ACID ENGINE ACTIVE' : 'ENGINE READY'}</span>
+          <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
+            <span className="w-[145px] h-8 px-2.5 rounded bg-slate-900 text-slate-300 font-bold border border-slate-700 flex items-center justify-center gap-2 shadow-sm shrink-0 select-none whitespace-nowrap">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isPlaying ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+              <span className="truncate">{isPlaying ? t('acidEngineActive') : t('engineReady')}</span>
             </span>
+
+            {/* START ACID / STOP Master Button in Silver Faceplate Toolbar */}
+            <button
+              type="button"
+              onClick={togglePlay}
+              className={`w-[130px] h-8 flex items-center justify-center gap-1.5 rounded-lg font-black text-xs shadow-md transition cursor-pointer select-none whitespace-nowrap shrink-0 ${
+                isPlaying
+                  ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.7)] border border-red-400'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)] border border-emerald-400'
+              }`}
+              title={isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}
+            >
+              {isPlaying ? (
+                <Square className="w-3.5 h-3.5 fill-white shrink-0" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-white shrink-0" />
+              )}
+              <span>{isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -139,10 +160,10 @@ export const Neural303Visualizer: React.FC = () => {
               <Atom className="w-4 h-4 text-indigo-400 animate-spin" />
               <div>
                 <div className="text-xs font-black uppercase text-indigo-300 tracking-wider flex items-center gap-2">
-                  <span>Audible Electron Physics & Transport Modes</span>
+                  <span>{t('electronPhysicsTitle')}</span>
                 </div>
                 <div className="text-[10px] text-slate-400">
-                  Переключайте режимы для мгновенного изменения звуковой текстуры
+                  {t('electronPhysicsSubtitle')}
                 </div>
               </div>
             </div>
@@ -155,10 +176,10 @@ export const Neural303Visualizer: React.FC = () => {
                   ? 'bg-amber-500 text-slate-950 border-amber-300 animate-pulse shadow-[0_0_12px_rgba(245,158,11,0.6)]'
                   : 'bg-slate-900 hover:bg-slate-800 text-amber-300 border-amber-500/50'
               }`}
-              title="Mutes synth oscillators and isolates only the electron particle stream so you can audition the physics directly!"
+              title={t('soloAuditionTitle')}
             >
               <Headphones className="w-3.5 h-3.5" />
-              <span>{electronSolo ? 'SOLO ELECTRONS' : 'AUDITION SOLO'}</span>
+              <span>{electronSolo ? t('soloElectrons') : t('auditionSolo')}</span>
             </button>
           </div>
 
@@ -175,12 +196,12 @@ export const Neural303Visualizer: React.FC = () => {
             >
               <div className="flex items-center justify-between pb-0.5">
                 <span className="font-black text-xs text-indigo-300 flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-indigo-400" /> QUANTUM SHOT
+                  <Zap className="w-3 h-3 text-indigo-400" /> {t('quantumShotName')}
                 </span>
                 {electronMode === 'quantum_shot' && <CheckCircle2 className="w-3 h-3 text-indigo-400" />}
               </div>
               <div className="text-[9px] text-slate-400 leading-tight">
-                2·q·I — Дискретный треск квантовых пакетов на фильтре.
+                {t('quantumShotDesc')}
               </div>
             </button>
 
@@ -195,12 +216,12 @@ export const Neural303Visualizer: React.FC = () => {
             >
               <div className="flex items-center justify-between pb-0.5">
                 <span className="font-black text-xs text-rose-300 flex items-center gap-1">
-                  <Flame className="w-3 h-3 text-rose-400" /> THERMAL BOLTZMANN
+                  <Flame className="w-3 h-3 text-rose-400" /> {t('thermalBoltzmannName')}
                 </span>
                 {electronMode === 'thermal_boltzmann' && <CheckCircle2 className="w-3 h-3 text-rose-400" />}
               </div>
               <div className="text-[9px] text-slate-400 leading-tight">
-                4·k_B·T — Тёплый аналоговый дрейф строя, тепловое шипение.
+                {t('thermalBoltzmannDesc')}
               </div>
             </button>
 
@@ -215,12 +236,12 @@ export const Neural303Visualizer: React.FC = () => {
             >
               <div className="flex items-center justify-between pb-0.5">
                 <span className="font-black text-xs text-amber-300 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-400" /> 1/f MEMRISTOR
+                  <Sparkles className="w-3 h-3 text-amber-400" /> {t('flickerFilamentName')}
                 </span>
                 {electronMode === 'flicker_filament' && <CheckCircle2 className="w-3 h-3 text-amber-400" />}
               </div>
               <div className="text-[9px] text-slate-400 leading-tight">
-                Низкочастотный рокот вакансий кислорода и скачки RTS.
+                {t('flickerFilamentDesc')}
               </div>
             </button>
 
@@ -235,12 +256,12 @@ export const Neural303Visualizer: React.FC = () => {
             >
               <div className="flex items-center justify-between pb-0.5">
                 <span className="font-black text-xs text-red-400 flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-red-400 animate-pulse" /> AVALANCHE
+                  <Zap className="w-3 h-3 text-red-400 animate-pulse" /> {t('avalancheName')}
                 </span>
                 {electronMode === 'avalanche_breakdown' && <CheckCircle2 className="w-3 h-3 text-red-400" />}
               </div>
               <div className="text-[9px] text-slate-400 leading-tight">
-                Лавинный пробой диодов, туннельный фузз и агрессия VCF.
+                {t('avalancheDesc')}
               </div>
             </button>
           </div>
@@ -255,8 +276,8 @@ export const Neural303Visualizer: React.FC = () => {
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="font-black text-xs text-slate-200">⚪ PURE SILICON BYPASS</span>
-              <span className="text-[10px] text-slate-400">Чистый кремний без шума и дрейфа</span>
+              <span className="font-black text-xs text-slate-200">{t('bypassCleanName')}</span>
+              <span className="text-[10px] text-slate-400">{t('bypassCleanDesc')}</span>
             </div>
             {electronMode === 'bypass_clean' && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
           </button>
@@ -264,7 +285,7 @@ export const Neural303Visualizer: React.FC = () => {
           {/* Electron Controls Slider */}
           <div className="space-y-1 pt-1">
             <div className="flex justify-between text-[11px] text-slate-300">
-              <span className="font-bold text-indigo-300">ИНТЕНСИВНОСТЬ ПОТОКА (FLUX):</span>
+              <span className="font-bold text-indigo-300">{t('fluxIntensity')}</span>
               <span className="text-indigo-400 font-black">{electronFlux}%</span>
             </div>
             <input
@@ -284,7 +305,7 @@ export const Neural303Visualizer: React.FC = () => {
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-red-400" />
               <span className="text-xs font-black uppercase text-red-400 tracking-wider">
-                Live Macro Physics Shaper
+                {t('liveMacroTitle')}
               </span>
             </div>
           </div>
@@ -295,7 +316,7 @@ export const Neural303Visualizer: React.FC = () => {
               <div className="flex justify-between items-center text-xs">
                 <span className="flex items-center gap-1 text-rose-300 font-bold">
                   <Flame className="w-3 h-3 text-rose-400" />
-                  <span>TEMP ({specs.temperatureKelvin} K)</span>
+                  <span>{t('tempMacroLabel')} ({specs.temperatureKelvin} K)</span>
                 </span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 font-bold border border-rose-800">
                   Decay ({effectiveCc.decay})
@@ -316,7 +337,7 @@ export const Neural303Visualizer: React.FC = () => {
               <div className="flex justify-between items-center text-xs">
                 <span className="flex items-center gap-1 text-cyan-300 font-bold">
                   <Zap className="w-3 h-3 text-cyan-400" />
-                  <span>TIA GAIN ({(specs.tiaGainRf / 1000).toFixed(0)} kΩ)</span>
+                  <span>{t('tiaGainMacroLabel')} ({(specs.tiaGainRf / 1000).toFixed(0)} kΩ)</span>
                 </span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 font-bold border border-cyan-800">
                   Drive ({effectiveCc.drive})
@@ -338,7 +359,7 @@ export const Neural303Visualizer: React.FC = () => {
               <div className="flex justify-between items-center text-xs">
                 <span className="flex items-center gap-1 text-amber-300 font-bold">
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>DRIFT ({(specs.conductanceDriftStd * 100).toFixed(0)}%)</span>
+                  <span>{t('driftMacroLabel')} ({(specs.conductanceDriftStd * 100).toFixed(0)}%)</span>
                 </span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 font-bold border border-amber-800">
                   Resonance ({effectiveCc.resonance})
@@ -367,42 +388,42 @@ export const Neural303Visualizer: React.FC = () => {
         onOpenWavModal={() => setIsWavModalOpen(true)}
       />
 
-  {/* Preset Manager Modal */}
-  <PresetManagerModal
-    isOpen={isPresetModalOpen}
-    onClose={() => setIsPresetModalOpen(false)}
-  />
+      {/* Preset Manager Modal */}
+      <PresetManagerModal
+        isOpen={isPresetModalOpen}
+        onClose={() => setIsPresetModalOpen(false)}
+      />
 
-  {/* WAV Audio Studio & Recorder Modal */}
-  <WavExportModal
-    isOpen={isWavModalOpen}
-    onClose={() => setIsWavModalOpen(false)}
-  />
+      {/* WAV Audio Studio & Recorder Modal */}
+      <WavExportModal
+        isOpen={isWavModalOpen}
+        onClose={() => setIsWavModalOpen(false)}
+      />
 
-  {/* Floating Live Recording Status Indicator (Allows tweaking knobs while recording) */}
-  {isLiveRecordingActive && (
-    <div className="fixed bottom-5 right-5 z-40 bg-rose-950/95 border-2 border-rose-500 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md font-mono text-white flex items-center gap-3 animate-pulse">
-      <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping inline-block" />
-      <div>
-        <div className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-2">
-          <span>● REC ЗАПИСЬ СЕССИИ</span>
-          <span className="font-mono text-white font-bold">
-            {Math.floor(liveRecordingTime / 60).toString().padStart(2, '0')}:
-            {Math.floor(liveRecordingTime % 60).toString().padStart(2, '0')} / 10:00
-          </span>
+      {/* Floating Live Recording Status Indicator (Allows tweaking knobs while recording) */}
+      {isLiveRecordingActive && (
+        <div className="fixed bottom-5 right-5 z-40 bg-rose-950/95 border-2 border-rose-500 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md font-mono text-white flex items-center gap-3 animate-pulse">
+          <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping inline-block" />
+          <div>
+            <div className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-2">
+              <span>{t('recSession')}</span>
+              <span className="font-mono text-white font-bold">
+                {Math.floor(liveRecordingTime / 60).toString().padStart(2, '0')}:
+                {Math.floor(liveRecordingTime % 60).toString().padStart(2, '0')} / 10:00
+              </span>
+            </div>
+            <div className="text-[10px] text-slate-300">
+              {t('recSessionDesc')}
+            </div>
+          </div>
+          <button
+            onClick={() => setIsWavModalOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer border border-rose-400"
+          >
+            {t('recWindowBtn')}
+          </button>
         </div>
-        <div className="text-[10px] text-slate-300">
-          Записываются звук и все движения ручек TB-303
-        </div>
-      </div>
-      <button
-        onClick={() => setIsWavModalOpen(true)}
-        className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer border border-rose-400"
-      >
-        Окно записи / Стоп
-      </button>
+      )}
     </div>
-  )}
-</div>
   );
 };

@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 import { MIDI_PARAMS, MidiParamDefinition } from '../engine/midi_mappings';
 
 interface MidiSettingsModalProps {
@@ -23,6 +24,7 @@ interface MidiSettingsModalProps {
 }
 
 export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useLanguage();
   const {
     midiInputs,
     midiOutputs,
@@ -58,15 +60,15 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
-                <span>Настройки MIDI & MIDI Learn</span>
+                <span>{t('midiSettingsHeader')}</span>
                 {activeLearnParam && (
                   <span className="px-2 py-0.5 rounded text-[10px] bg-red-600 text-white font-black animate-pulse shadow">
-                    ● LEARN АКТИВЕН
+                    {t('midiLearnActiveBadge')}
                   </span>
                 )}
               </h2>
               <p className="text-xs text-slate-400">
-                Подключение MIDI-клавиатуры, назначение фейдеров и игра на клавишах
+                {t('midiSettingsSub')}
               </p>
             </div>
           </div>
@@ -77,7 +79,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
               onClose();
             }}
             className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer border border-transparent hover:border-slate-700"
-            title="Закрыть"
+            title={t('closeBtn')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -94,7 +96,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Назначение фейдеров (MIDI Learn)</span>
+            <span>{t('tabFaderMapping')}</span>
           </button>
 
           <button
@@ -106,7 +108,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
             }`}
           >
             <Keyboard className="w-3.5 h-3.5" />
-            <span>Клавиатура ПК (Пианино)</span>
+            <span>{t('tabPcKeyboard')}</span>
           </button>
 
           <button
@@ -118,7 +120,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
-            <span>Устройства & Монитор</span>
+            <span>{t('tabDevicesMonitor')}</span>
           </button>
         </div>
 
@@ -131,20 +133,20 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
                 <div>
                   <div className="font-bold flex items-center gap-1.5">
                     <Zap className="w-4 h-4 text-indigo-400 animate-pulse" />
-                    <span>Быстрое назначение физических ручек и фейдеров:</span>
+                    <span>{t('quickAssignTitle')}</span>
                   </div>
                   <div className="text-[11px] text-slate-300 mt-0.5">
-                    Нажмите кнопку <strong className="text-white">LEARN</strong> напротив нужного параметра, затем поверните любую ручку на вашей MIDI-клавиатуре. Назначение произойдёт мгновенно!
+                    {t('quickAssignDesc')}
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={resetMidiMappings}
                   className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1 shadow"
-                  title="Вернуть стандартные CC TB-303 (Cutoff: CC74, Res: CC71...)"
+                  title={t('resetCcTooltip')}
                 >
                   <RotateCcw className="w-3 h-3" />
-                  <span>Сброс CC</span>
+                  <span>{t('resetCcBtn')}</span>
                 </button>
               </div>
 
@@ -213,7 +215,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
                           }`}
                         >
                           <Zap className={`w-3.5 h-3.5 ${isLearning ? 'animate-bounce' : 'text-indigo-400'}`} />
-                          <span>{isLearning ? 'КРУТИТЕ РУЧКУ...' : 'LEARN'}</span>
+                          <span>{isLearning ? t('turnKnobPrompt') : 'LEARN'}</span>
                         </button>
                       </div>
                     </div>
@@ -229,18 +231,17 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
               <div className="bg-amber-950/40 border border-amber-500/50 rounded-xl p-3 text-xs text-amber-200 space-y-1.5 shadow-inner">
                 <div className="font-bold flex items-center gap-1.5 text-amber-300">
                   <Keyboard className="w-4 h-4 text-amber-400" />
-                  <span>Игра на компьютерной клавиатуре:</span>
+                  <span>{t('keyboardPlayTitle')}</span>
                 </div>
                 <div className="text-[11px] text-slate-300 leading-relaxed">
-                  Вы можете играть кислотные бас-партии прямо на буквах клавиатуры!
-                  Клавиши <strong>Z</strong> и <strong>X</strong> переключают базовую октаву вверх и вниз во время игры.
+                  {t('keyboardPlayDesc')}
                 </div>
               </div>
 
               {/* Current Octave Selector */}
               <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-300">Текущая октава клавиш:</span>
+                  <span className="text-xs font-bold text-slate-300">{t('currentKeyOctave')}</span>
                   <span className="text-sm font-black text-amber-400 font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-700">
                     C{Math.floor(keyboardOctave / 12) - 1} ({keyboardOctave} MIDI)
                   </span>
@@ -251,17 +252,17 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
                     type="button"
                     onClick={() => setKeyboardOctave(Math.max(24, keyboardOctave - 12))}
                     className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold border border-slate-700 transition cursor-pointer text-xs flex items-center gap-1"
-                    title="Сдвиг на октаву вниз (Клавиша Z)"
+                    title={t('octDownBtn')}
                   >
-                    <span>[Z] -1 Окт</span>
+                    <span>{t('octDownBtn')}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setKeyboardOctave(Math.min(72, keyboardOctave + 12))}
                     className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold border border-slate-700 transition cursor-pointer text-xs flex items-center gap-1"
-                    title="Сдвиг на октаву вверх (Клавиша X)"
+                    title={t('octUpBtn')}
                   >
-                    <span>+1 Окт [X]</span>
+                    <span>{t('octUpBtn')}</span>
                   </button>
                 </div>
               </div>
@@ -269,9 +270,9 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
               {/* Interactive Virtual Keyboard Visualizer */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
                 <div className="text-xs font-bold text-slate-400 flex items-center justify-between">
-                  <span>Раскладка клавиш (нажимайте кнопки на клавиатуре для звука):</span>
+                  <span>{t('keyboardLayoutTitle')}</span>
                   <span className="text-[10px] text-emerald-400 font-mono">
-                    ● DSP ACID СИНТЕЗАТОР АКТИВЕН
+                    ● DSP ACID ENGINE ACTIVE
                   </span>
                 </div>
 
@@ -356,7 +357,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
                   <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>MIDI Input (Клавиатуры / Контроллеры)</span>
+                      <span>{t('midiInputLabel')}</span>
                     </span>
                   </div>
                   <select
@@ -365,7 +366,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
                     className="w-full bg-slate-950 border border-slate-700 text-slate-200 font-bold p-2 rounded-lg text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
                     {midiInputs.length === 0 ? (
-                      <option value="">Нет подключённых MIDI-устройств</option>
+                      <option value="">{t('noMidiInput')}</option>
                     ) : (
                       midiInputs.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -381,7 +382,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
                   <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <Radio className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>MIDI Output (В DAW / Железо)</span>
+                      <span>{t('midiOutputLabel')}</span>
                     </span>
                   </div>
                   <select
@@ -390,7 +391,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
                     className="w-full bg-slate-950 border border-slate-700 text-slate-200 font-bold p-2 rounded-lg text-xs focus:outline-none focus:border-cyan-500 cursor-pointer"
                   >
                     {midiOutputs.length === 0 ? (
-                      <option value="">Нет выходных портов</option>
+                      <option value="">{t('noMidiOutput')}</option>
                     ) : (
                       midiOutputs.map((d) => (
                         <option key={d.id} value={d.id}>
@@ -405,18 +406,18 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
               {/* Status and Diagnostics */}
               <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-400">Статус Web MIDI API:</span>
+                  <span className="font-bold text-slate-400">{t('midiStatusLabel')}</span>
                   <span className="text-emerald-400 font-bold font-mono">{midiStatusText}</span>
                 </div>
 
                 {/* Real-Time Live Byte Log */}
                 <div className="space-y-1 pt-2 border-t border-slate-800">
                   <div className="text-[10px] text-slate-500 font-bold uppercase">
-                    Живой поток сообщений (Live MIDI Stream):
+                    {t('liveMidiStream')}
                   </div>
                   <div className="bg-slate-950 p-2 rounded-lg border border-slate-900 h-28 overflow-y-auto space-y-0.5 font-mono text-[10px]">
                     {midiByteLog.length === 0 ? (
-                      <div className="text-slate-600 italic">Ожидание MIDI сообщений...</div>
+                      <div className="text-slate-600 italic">{t('waitingMidi')}</div>
                     ) : (
                       midiByteLog.map((log, idx) => (
                         <div key={idx} className="text-emerald-400/90 leading-tight">
@@ -436,10 +437,10 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
           <div className="text-[11px] text-slate-400">
             {activeLearnParam ? (
               <span className="text-red-400 font-bold animate-pulse">
-                ● Вращайте ручку на MIDI-контроллере для привязки...
+                {t('learningKnobStatus')}
               </span>
             ) : (
-              <span>Назначения CC сохраняются автоматически в браузере.</span>
+              <span>{t('ccSavedNotice')}</span>
             )}
           </div>
 
@@ -451,7 +452,7 @@ export const MidiSettingsModal: React.FC<MidiSettingsModalProps> = ({ isOpen, on
             }}
             className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition cursor-pointer shadow border border-indigo-400 text-xs"
           >
-            Готово
+            {t('doneBtn')}
           </button>
         </div>
       </div>

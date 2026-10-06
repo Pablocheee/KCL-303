@@ -16,11 +16,13 @@ import {
   AudioWaveform,
 } from 'lucide-react';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 import { dspAudio } from '../engine/dsp_audio_engine';
 
 type SoundProfile = 'acid_climax' | 'scream_drive' | 'deep_sub' | 'balanced';
 
 export const TB303Touchpad: React.FC = () => {
+  const { t } = useLanguage();
   const {
     baseCutoffCC,
     baseResonanceCC,
@@ -561,23 +563,23 @@ export const TB303Touchpad: React.FC = () => {
           </div>
           <div>
             <div className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
-              <span>Сенсорный Мульти-Тачпад (Ультра-скорость 120 FPS)</span>
+              <span>{t('touchpadTitle')}</span>
               {isPointerLocked ? (
                 <span className="px-2 py-0.5 rounded-full bg-red-600 text-white font-black text-[10px] animate-pulse">
-                  ● МЫШЬ ЗАХВАЧЕНА
+                  {t('touchpadMouseLocked')}
                 </span>
               ) : isTouchActive ? (
                 <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px] animate-pulse">
-                  ● СЕНСОР АКТИВЕН {multiTouchCount > 1 ? `(${multiTouchCount} ПАЛЬЦА)` : ''}
+                  {t('touchpadSensorActive')} {multiTouchCount > 1 ? `(${multiTouchCount} P)` : ''}
                 </span>
               ) : (
                 <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold text-[10px]">
-                  КАСАНИЕ / ТРЕКПАД
+                  {t('touchpadTouchpad')}
                 </span>
               )}
             </div>
             <div className="text-[11px] text-slate-400">
-              Любое движение пальцем сразу меняет ВСЕ 6 фильтров TB-303 с нулевой задержкой
+              {t('touchpadSub')}
             </div>
           </div>
         </div>
@@ -591,10 +593,10 @@ export const TB303Touchpad: React.FC = () => {
                 ? 'bg-red-600 hover:bg-red-500 text-white border-red-300 shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-pulse'
                 : 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.6)]'
             }`}
-            title="Захватить курсор мыши: трекпад ноутбука превратится в сенсорный тачпад (клик мыши или ESC для выхода)"
+            title="Lock Mouse: laptop trackpad turns into XY touch surface"
           >
             <Crosshair className="w-4 h-4" />
-            <span>{isPointerLocked ? 'ОТПУСТИТЬ ТРЕКПАД (КЛИК / ESC)' : 'ЗАХВАТ ТРЕКПАДА (LOCK)'}</span>
+            <span>{isPointerLocked ? t('touchpadUnlockBtn') : t('touchpadLockBtn')}</span>
           </button>
 
           <div className="flex bg-slate-900 p-0.5 rounded-lg border border-slate-700 text-xs">
@@ -629,7 +631,7 @@ export const TB303Touchpad: React.FC = () => {
             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 border ${
               isHold ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-slate-900 text-slate-400 border-slate-700'
             }`}
-            title={isHold ? 'HOLD: значения фиксируются при отрыве пальца' : 'HOLD: возврат в центр при отрыве'}
+            title={isHold ? t('touchpadHoldOn') : t('touchpadHoldOff')}
           >
             {isHold ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
             <span>HOLD</span>
@@ -824,7 +826,7 @@ export const TB303Touchpad: React.FC = () => {
         {multiTouchCount > 1 && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-cyan-950/95 border-2 border-cyan-400 px-3 py-1 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.8)] pointer-events-none flex items-center gap-1.5 text-xs font-black text-cyan-300 animate-pulse">
             <Zap className="w-3.5 h-3.5 text-cyan-400" />
-            <span>МУЛЬТИ-ТАЧ ({multiTouchCount} ПАЛЬЦА): OVERDRIVE BOOST!</span>
+            <span>{t('multiTouchBoost')}</span>
           </div>
         )}
 
@@ -832,9 +834,9 @@ export const TB303Touchpad: React.FC = () => {
         {isPointerLocked && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-slate-950/95 border-2 border-red-500 px-4 py-1.5 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.7)] pointer-events-none flex items-center gap-2 text-xs font-black animate-fadeIn">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-            <span className="text-white">ТРЕКПАД ЗАХВАЧЕН: ВОДИТЕ ПАЛЬЦЕМ ПО НОУТБУКУ</span>
+            <span className="text-white">{t('trackpadCapturedHint')}</span>
             <span className="text-red-300 text-[10px] bg-red-950/80 px-2 py-0.5 rounded border border-red-700">
-              [КЛИК МЫШИ / ESC] ВЫХОД
+              {t('trackpadExitHint')}
             </span>
           </div>
         )}
@@ -846,7 +848,7 @@ export const TB303Touchpad: React.FC = () => {
             DIRECT TOUCH GLASS • TRACKPAD KINETIC SURFACE
           </div>
           <div className="text-[10px] text-slate-300 mt-0.5">
-            Касайтесь пальцем в любое место экрана смартфона или свайпайте по трекпаду
+            {t('touchpadInstructions')}
           </div>
         </div>
       </div>
@@ -863,10 +865,7 @@ export const TB303Touchpad: React.FC = () => {
         <div className="flex items-center gap-3 text-[11px] text-slate-400">
           <span className="flex items-center gap-1">
             <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-            <strong className="text-slate-200">Смартфон:</strong> нажимайте прямо на экран в любую точку
-          </span>
-          <span className="hidden sm:inline">
-            <strong className="text-slate-200">Ноутбук:</strong> кликните [ЗАХВАТ ТРЕКПАДА]
+            <span>{t('touchpadInstructions')}</span>
           </span>
         </div>
       </div>

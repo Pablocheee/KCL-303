@@ -20,8 +20,10 @@ import {
 import type { TokenGenerationStep, TextGenerationResult } from '../engine/llm_engine';
 import { defaultTokenizer } from '../engine/tokenizer';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 
 export const TransformerTextGenerator: React.FC = () => {
+  const { t } = useLanguage();
   const {
     generatePatternFromTextPrompt,
     modulateSynthFromTokenStep,
@@ -274,20 +276,21 @@ export const TransformerTextGenerator: React.FC = () => {
                 }`}
               >
                 {isLiveAudioLinkActive ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
-                <span>{isLiveAudioLinkActive ? 'ЗВУК ПРИ ГЕНЕРАЦИИ: ВКЛ' : 'ЗВУК: ВЫКЛ'}</span>
+                <span>{isLiveAudioLinkActive ? t('soundOn') : t('soundOff')}</span>
               </button>
 
               {/* Play / Stop TB-303 Button */}
               <button
+                type="button"
                 onClick={togglePlay}
-                className={`px-3 py-1 rounded text-xs font-black transition cursor-pointer flex items-center gap-1.5 shadow ${
+                className={`w-[110px] h-7 rounded text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 shadow select-none whitespace-nowrap shrink-0 ${
                   isPlaying
                     ? 'bg-red-600 text-white animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.7)]'
                     : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                 }`}
               >
-                {isPlaying ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-                <span>{isPlaying ? 'СТОП 303' : 'ИГРАТЬ 303'}</span>
+                {isPlaying ? <Square className="w-3.5 h-3.5 fill-current shrink-0" /> : <Play className="w-3.5 h-3.5 fill-current shrink-0" />}
+                <span>{isPlaying ? t('stop303') : t('play303')}</span>
               </button>
             </div>
           </div>
@@ -338,9 +341,9 @@ export const TransformerTextGenerator: React.FC = () => {
           {/* Live 32-Step Pattern Miniature Preview generated from the text */}
           <div className="space-y-1 pt-1">
             <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
-              <span>СИНТЕЗИРОВАННЫЙ 32-ШАГОВЫЙ ACID РИФФ ИЗ ТЕКСТА "{lastSynthesizedMeta?.promptText || prompt}":</span>
+              <span>{t('synthesizedRiffTitle')} "{lastSynthesizedMeta?.promptText || prompt}":</span>
               {isPlaying && (
-                <span className="text-emerald-400 animate-pulse">Шаг {currentStep + 1} звучит</span>
+                <span className="text-emerald-400 animate-pulse">{t('stepPlaying').replace('{step}', String(currentStep + 1))}</span>
               )}
             </div>
             <div className="grid grid-cols-16 gap-0.5 max-w-full overflow-hidden">
@@ -358,7 +361,7 @@ export const TransformerTextGenerator: React.FC = () => {
                           : 'bg-amber-500/80 text-slate-950 border-amber-400'
                         : 'bg-slate-900 text-slate-600 border-slate-800'
                     }`}
-                    title={`Шаг ${idx + 1}: ${s.noteName} ${s.accent ? '(ACC)' : ''} ${s.slide ? '(SLD)' : ''}`}
+                    title={`Step ${idx + 1}: ${s.noteName} ${s.accent ? '(ACC)' : ''} ${s.slide ? '(SLD)' : ''}`}
                   >
                     <span>{s.gate ? s.noteName : '·'}</span>
                   </div>

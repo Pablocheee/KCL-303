@@ -39,7 +39,7 @@ export const PresetManagerModal: React.FC<PresetManagerModalProps> = ({ isOpen, 
 
   if (!isOpen) return null;
 
-  const categories = ['All', 'Acid', 'Gabba', 'Electro', 'Tribcore', 'Tekno', 'User'];
+  const categories = ['All', 'Tekno', 'Acid', 'Tribcore', 'Gabba', 'Electro', 'User'];
 
   const filteredPresets = presets.filter(
     (p) => selectedCategory === 'All' || p.category === selectedCategory

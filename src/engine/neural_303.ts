@@ -2,7 +2,7 @@
  * Neural TB-303 MIDI Sequencer Engine (src/engine/neural_303.ts)
  * 
  * Bridges 1-bit neural network activations & analog crossbar telemetry
- * to a Roland TB-303 virtual MIDI stream with continuous parameter modulation.
+ * to a TB-303 virtual MIDI stream with continuous parameter modulation.
  * 
  * Real-time Physical CC Mappings:
  *  1. Token Entropy (Model Uncertainty) -> Filter Resonance (CC 71)

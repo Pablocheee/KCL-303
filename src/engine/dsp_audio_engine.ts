@@ -11,7 +11,7 @@
  *      * 'bypass_clean' (Pure silicon crystal bypass for instant A/B evaluation)
  *  - Dedicated Electron Solo / Audition Monitor
  *  - VCF 24dB Diode Ladder with Electron Thermal Cutoff Jitter
- *  - Roland TR-8S Style Bipolar Morph Filter Engine (LPF <-> Flat <-> HPF / Formant / Comb / Acid)
+ *  - TR-8S Style Bipolar Morph Filter Engine (LPF <-> Flat <-> HPF / Formant / Comb / Acid)
  *  - Ultra-Smooth Pre/Post Drive Matrix (Zero-Allocation, No GC stutter)
  *  - Sub-Oscillator & Master Gain
  */
@@ -27,6 +27,8 @@ export type ElectronMode =
   | 'avalanche_breakdown'
   | 'bypass_clean';
 
+export type SpatialRainMode = 'off' | 'pingpong' | 'drops' | 'spiral';
+
 export class DSPAudioEngine {
   private ctx: AudioContext | null = null;
   public isLive = false;
@@ -34,12 +36,15 @@ export class DSPAudioEngine {
   public morphType: FilterMorphType = 'tr8s_dj';
   public electronMode: ElectronMode = 'thermal_boltzmann';
   public electronSolo = false;
+  public spatialRainMode: SpatialRainMode = 'off';
+  public currentPanValue = 0;
 
   // Persistent Mono Synth Voice Nodes
   private osc: OscillatorNode | null = null;
   private oscGain: GainNode | null = null;
   private subOsc: OscillatorNode | null = null;
   private subGain: GainNode | null = null;
+  private stereoPanner: StereoPannerNode | null = null;
   private mainFilter: BiquadFilterNode | null = null;
 
   // Dedicated TR-8S Morph Filter Nodes (Bipolar LPF <-> Center Flat <-> HPF & Formant)
@@ -278,7 +283,7 @@ export class DSPAudioEngine {
     mainFilter.Q.setValueAtTime(this.baseResonanceQ, now);
     pitchLfoGain.connect(mainFilter.detune); // Injects rich synced LFO modulation to filter cutoff in cents!
 
-    // 4. Dedicated Roland TR-8S MORPH FILTER Parallel Structure
+    // 4. Dedicated TR-8S MORPH FILTER Parallel Structure
     const morphLPF = this.ctx.createBiquadFilter();
     morphLPF.type = 'lowpass';
     morphLPF.frequency.setValueAtTime(20000, now);
@@ -370,7 +375,17 @@ export class DSPAudioEngine {
     // Direct electron audition signal joins the post-drive stage
     electronDirectGain.connect(vcaGain);
 
-    vcaGain.connect(masterGain);
+    // 7b. Spatial Rain Mirror Stereo Panner
+    let stereoPanner: StereoPannerNode | null = null;
+    if (this.ctx && typeof this.ctx.createStereoPanner === 'function') {
+      stereoPanner = this.ctx.createStereoPanner();
+      stereoPanner.pan.setValueAtTime(0, now);
+      vcaGain.connect(stereoPanner);
+      stereoPanner.connect(masterGain);
+    } else {
+      vcaGain.connect(masterGain);
+    }
+
     masterGain.connect(this.ctx.destination);
 
     osc.start();
@@ -380,6 +395,7 @@ export class DSPAudioEngine {
     this.oscGain = oscGain;
     this.subOsc = subOsc;
     this.subGain = subGain;
+    this.stereoPanner = stereoPanner;
     this.mainFilter = mainFilter;
     this.morphLPF = morphLPF;
     this.morphHPF = morphHPF;
@@ -902,6 +918,27 @@ export class DSPAudioEngine {
       this.vcaGain.gain.linearRampToValueAtTime(targetVolume, now + 0.003);
       this.vcaGain.gain.setValueAtTime(targetVolume, now + Math.max(0.005, gateTime - 0.006));
       this.vcaGain.gain.linearRampToValueAtTime(0.0001, now + gateTime);
+
+      // Spatial Rain Mirror Panner (Flying rain drops / mirror ping-pong modulation)
+      if (this.stereoPanner && this.spatialRainMode !== 'off') {
+        const idx = stepData.stepIndex;
+        let targetPan = 0;
+        if (this.spatialRainMode === 'pingpong') {
+          // Mirror Ping-Pong Bounce (Alternates L/R with variable depth per step)
+          const depth = 0.75 + 0.20 * Math.sin(idx * 1.7);
+          targetPan = (idx % 2 === 0 ? -1 : 1) * depth;
+        } else if (this.spatialRainMode === 'drops') {
+          // 3D Rain Drops Scatter (Flying across stereo points mirror-wise)
+          const DROPS_MAP = [-0.88, 0.78, -0.42, 0.94, -0.72, 0.62, -0.96, 0.42, -0.38, 0.86, -0.82, 0.94, -0.68, 0.52, -0.92, 0.72];
+          targetPan = DROPS_MAP[idx % DROPS_MAP.length];
+        } else if (this.spatialRainMode === 'spiral') {
+          // Hypnotic Vortex Orbit across 360 stereo spectrum
+          targetPan = Math.sin((idx / 16) * Math.PI * 2) * 0.92;
+        }
+        this.currentPanValue = targetPan;
+        this.stereoPanner.pan.cancelScheduledValues(now);
+        this.stereoPanner.pan.setTargetAtTime(targetPan, now, 0.02);
+      }
     } else {
       this.isEnvelopeActive = false;
       this.vcaGain.gain.cancelScheduledValues(now);
@@ -958,16 +995,6 @@ export class DSPAudioEngine {
     const baseFreq = 440 * Math.pow(2, (note - 69) / 12);
     this.currentNoteFreq = baseFreq;
 
-    if (slide) {
-      this.osc.frequency.cancelScheduledValues(now);
-      this.osc.frequency.setTargetAtTime(baseFreq, now, 0.035);
-      this.subOsc.frequency.setTargetAtTime(baseFreq * 0.5, now, 0.035);
-    } else {
-      this.osc.frequency.cancelScheduledValues(now);
-      this.osc.frequency.setValueAtTime(baseFreq, now);
-      this.subOsc.frequency.setValueAtTime(baseFreq * 0.5, now);
-    }
-
     const isAccent = velocity > 100;
     const peakCutoff = isAccent
       ? Math.min(13000, this.baseCutoffHz + this.envModAmount * 5200 + this.accentAmount * 3500)
@@ -975,18 +1002,72 @@ export class DSPAudioEngine {
 
     const decayDuration = isAccent ? Math.max(0.1, this.baseDecaySec * 0.65) : this.baseDecaySec;
     const baseFloor = Math.max(120, this.baseCutoffHz * 0.25);
-
-    this.mainFilter.frequency.cancelScheduledValues(now);
-    this.mainFilter.frequency.setValueAtTime(Math.max(100, peakCutoff), now);
-    this.mainFilter.frequency.exponentialRampToValueAtTime(
-      Math.max(100, baseFloor),
-      now + decayDuration
-    );
-
     const targetVolume = isAccent ? 0.92 : 0.68;
-    this.vcaGain.gain.cancelScheduledValues(now);
-    this.vcaGain.gain.setValueAtTime(0.0001, now);
-    this.vcaGain.gain.linearRampToValueAtTime(targetVolume, now + 0.003);
+
+    if (slide) {
+      // Authentic TB-303 Legato Slide (smooth portamento glide without re-triggering attack clicks)
+      this.osc.frequency.cancelScheduledValues(now);
+      this.osc.frequency.setTargetAtTime(baseFreq, now, 0.045);
+      this.subOsc.frequency.cancelScheduledValues(now);
+      this.subOsc.frequency.setTargetAtTime(baseFreq * 0.5, now, 0.045);
+
+      this.mainFilter.frequency.cancelScheduledValues(now);
+      this.mainFilter.frequency.setTargetAtTime(peakCutoff, now, 0.03);
+      this.mainFilter.frequency.exponentialRampToValueAtTime(
+        Math.max(100, baseFloor),
+        now + decayDuration
+      );
+
+      this.vcaGain.gain.cancelScheduledValues(now);
+      this.vcaGain.gain.setTargetAtTime(targetVolume, now, 0.015);
+    } else {
+      // Fresh Note Trigger (Attack ramp & envelope sweep)
+      this.osc.frequency.cancelScheduledValues(now);
+      this.osc.frequency.setValueAtTime(baseFreq, now);
+      this.subOsc.frequency.cancelScheduledValues(now);
+      this.subOsc.frequency.setValueAtTime(baseFreq * 0.5, now);
+
+      this.mainFilter.frequency.cancelScheduledValues(now);
+      this.mainFilter.frequency.setValueAtTime(Math.max(100, peakCutoff), now);
+      this.mainFilter.frequency.exponentialRampToValueAtTime(
+        Math.max(100, baseFloor),
+        now + decayDuration
+      );
+
+      this.vcaGain.gain.cancelScheduledValues(now);
+      this.vcaGain.gain.setValueAtTime(0.0001, now);
+      this.vcaGain.gain.linearRampToValueAtTime(targetVolume, now + 0.003);
+    }
+
+    // Live keyboard spatial rain modulation
+    if (this.stereoPanner && this.spatialRainMode !== 'off') {
+      let targetPan = 0;
+      if (this.spatialRainMode === 'pingpong') {
+        targetPan = Math.random() > 0.5 ? 0.8 : -0.8;
+      } else if (this.spatialRainMode === 'drops') {
+        targetPan = (Math.random() * 1.8 - 0.9);
+      } else if (this.spatialRainMode === 'spiral') {
+        targetPan = Math.sin(now * 4) * 0.9;
+      }
+      this.currentPanValue = targetPan;
+      this.stereoPanner.pan.cancelScheduledValues(now);
+      this.stereoPanner.pan.setTargetAtTime(targetPan, now, 0.02);
+    }
+  }
+
+  public setSpatialRainMode(mode: SpatialRainMode) {
+    this.spatialRainMode = mode;
+    if (this.stereoPanner && this.ctx) {
+      if (mode === 'off') {
+        this.stereoPanner.pan.cancelScheduledValues(this.ctx.currentTime);
+        this.stereoPanner.pan.setTargetAtTime(0, this.ctx.currentTime, 0.04);
+        this.currentPanValue = 0;
+      }
+    }
+  }
+
+  public getSpatialRainMode(): SpatialRainMode {
+    return this.spatialRainMode;
   }
 
   /**

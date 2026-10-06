@@ -3,7 +3,7 @@
  * 
  * Central state store persisting:
  *  - Native Web Audio API DSP Synthesizer Engine (DSPAudioEngine)
- *  - Roland TR-8S Style Bipolar Morph Synthesis Filter
+ *  - TR-8S Style Bipolar Morph Synthesis Filter
  *  - 2-Way Ableton Live Web MIDI Bridge (Receives live notes & CC automations)
  *  - Real Preset Management (Save, Load, Delete, Export/Import JSON)
  *  - Analog Physics parameters & Quantum Electron Transport
@@ -26,7 +26,7 @@ import {
   generatePatternFromNeuromorphicPrompt,
 } from '../engine/neural_303_types';
 import { webMidi, WebMidiDevice, MidiEventData } from '../engine/web_midi';
-import { dspAudio, DSPCharacterMode, FilterMorphType, ElectronMode } from '../engine/dsp_audio_engine';
+import { dspAudio, DSPCharacterMode, FilterMorphType, ElectronMode, SpatialRainMode } from '../engine/dsp_audio_engine';
 import { PresetManager, SynthPreset, FACTORY_PRESETS } from '../engine/preset_manager';
 import { PatternManager, SavedPattern, FACTORY_PATTERNS, createEmptyPattern } from '../engine/pattern_manager';
 import { MidiMappingManager, MidiCcMap, MIDI_PARAMS } from '../engine/midi_mappings';
@@ -45,7 +45,7 @@ interface EngineContextType {
   dspCharacterMode: DSPCharacterMode;
   setDspCharacterMode: (mode: DSPCharacterMode) => void;
 
-  // Roland TR-8S Bipolar Morph Filter State
+  // TR-8S Bipolar Morph Filter State
   isMorphEnabled: boolean;
   setIsMorphEnabled: (enabled: boolean) => void;
   toggleMorphEnabled: () => void;
@@ -61,9 +61,14 @@ interface EngineContextType {
   setIsPitchLfoEnabled: (enabled: boolean) => void;
   togglePitchLfoEnabled: () => void;
   pitchLfoRate: number; // Hz (0.1 .. 16.0)
-  setPitchLfoRate: (rate: number) => void;
+  setPitchLfoRate: (rate: number, recordUndo?: boolean) => void;
   pitchLfoDepth: number; // Cents (5 .. 250)
   setPitchLfoDepth: (depth: number) => void;
+
+  // Spatial Rain Mirror Pan Filter State
+  spatialRainMode: SpatialRainMode;
+  setSpatialRainMode: (mode: SpatialRainMode) => void;
+  toggleSpatialRainMode: () => void;
 
   // Physical Electron Flux & Distinct Sound Modes
   electronFlux: number; // 0..100%
@@ -113,6 +118,7 @@ interface EngineContextType {
   viewMode: SequencerViewMode;
   setViewMode: (mode: SequencerViewMode) => void;
   clearPattern: () => void;
+  shiftPatternOctave: (deltaOctaves: number) => void;
   setPattern: React.Dispatch<React.SetStateAction<TB303StepData[]>>;
 
   // Base 303 Synth Knobs (0..127 MIDI space / physical units)
@@ -128,6 +134,15 @@ interface EngineContextType {
   setBaseAccentCC: (val: number) => void;
   baseDriveCC: number;
   setBaseDriveCC: (val: number) => void;
+  setAllBaseKnobsCC: (
+    cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; morph?: number },
+    resonance?: number,
+    decay?: number,
+    envMod?: number,
+    accent?: number,
+    drive?: number,
+    morph?: number
+  ) => void;
 
   // Static Knobs Mode (Locks knobs into steady manual / Ableton mode without twitching/jitter)
   isStaticKnobsLocked: boolean;
@@ -208,6 +223,35 @@ interface EngineContextType {
   activePianoKeys: Set<string>;
 }
 
+export interface FullEngineSnapshot {
+  desc: string;
+  timestamp: number;
+  pattern: TB303StepData[];
+  cutoffCC: number;
+  resonanceCC: number;
+  envModCC: number;
+  decayCC: number;
+  accentCC: number;
+  driveCC: number;
+  morphAmount: number;
+  morphResonance: number;
+  isMorphEnabled: boolean;
+  morphType: FilterMorphType;
+  bpm: number;
+  scale: ScaleName;
+  stepLength: number;
+  waveform: 'sawtooth' | 'square';
+  dspCharacterMode: DSPCharacterMode;
+  electronFlux: number;
+  electronMode: ElectronMode;
+  electronSolo: boolean;
+  isPitchLfoEnabled: boolean;
+  pitchLfoRate: number;
+  pitchLfoDepth: number;
+  spatialRainMode: SpatialRainMode;
+  specs: AnalogHardwareSpecs;
+}
+
 const EngineContext = createContext<EngineContextType | null>(null);
 
 export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -219,16 +263,34 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [electronMode, setElectronModeState] = useState<ElectronMode>('thermal_boltzmann');
   const [electronSolo, setElectronSoloState] = useState<boolean>(false);
 
-  // 1b. Roland TR-8S Bipolar Morph Filter State
+  const dspCharacterModeRef = useRef<DSPCharacterMode>('neural_chaos');
+  const electronFluxRef = useRef<number>(65);
+  const electronModeRef = useRef<ElectronMode>('thermal_boltzmann');
+  const electronSoloRef = useRef<boolean>(false);
+
+  // 1b. TR-8S Bipolar Morph Filter State
   const [isMorphEnabled, setIsMorphEnabledState] = useState<boolean>(true);
   const [morphAmount, setMorphAmountState] = useState<number>(0);
   const [morphType, setMorphTypeState] = useState<FilterMorphType>('tr8s_dj');
   const [morphResonance, setMorphResonanceState] = useState<number>(6);
 
+  const isMorphEnabledRef = useRef<boolean>(true);
+  const morphAmountRef = useRef<number>(0);
+  const morphTypeRef = useRef<FilterMorphType>('tr8s_dj');
+  const morphResonanceRef = useRef<number>(6);
+
   // 1b2. Continuous Pitch LFO State (Seamless Gapless Bass Vibrato / Drift)
   const [isPitchLfoEnabled, setIsPitchLfoEnabledState] = useState<boolean>(false);
   const [pitchLfoRate, setPitchLfoRateState] = useState<number>(3.5);
   const [pitchLfoDepth, setPitchLfoDepthState] = useState<number>(70);
+
+  const isPitchLfoEnabledRef = useRef<boolean>(false);
+  const pitchLfoRateRef = useRef<number>(3.5);
+  const pitchLfoDepthRef = useRef<number>(70);
+
+  // 1b3. Spatial Rain Mirror Pan Filter State
+  const [spatialRainMode, setSpatialRainModeState] = useState<SpatialRainMode>('off');
+  const spatialRainModeRef = useRef<SpatialRainMode>('off');
 
   // 1c. Preset Management
   const [presets, setPresets] = useState<SynthPreset[]>([]);
@@ -236,20 +298,39 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 2. Physical Simulation Specs
   const [specs, setSpecs] = useState<AnalogHardwareSpecs>(DEFAULT_ANALOG_SPECS);
+  const specsRef = useRef<AnalogHardwareSpecs>(DEFAULT_ANALOG_SPECS);
+  specsRef.current = specs;
 
   // 3. Sequencer Settings & View Mode
   const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpmState] = useState(138);
-  const [scale, setScale] = useState<ScaleName>('c_minor_pentatonic');
+  const [bpm, setBpmState] = useState(() => {
+    const savedActive = PatternManager.loadActivePatternState();
+    if (savedActive && savedActive.bpm) return savedActive.bpm;
+    return 162; // Tekno Default 162 BPM
+  });
+  const [scale, setScaleState] = useState<ScaleName>('c_minor_pentatonic');
   const [currentStep, setCurrentStep] = useState(0);
   const [stepLength, setStepLengthState] = useState<number>(32);
   const [waveform, setWaveformState] = useState<'sawtooth' | 'square'>('sawtooth');
   const [audioMuted, setAudioMuted] = useState(false);
   const [viewMode, setViewMode] = useState<SequencerViewMode>('t8_trrec');
 
+  const bpmRef = useRef(bpm);
+  bpmRef.current = bpm;
+  const scaleRef = useRef(scale);
+  scaleRef.current = scale;
+  const stepLengthRef = useRef(stepLength);
+  stepLengthRef.current = stepLength;
+  const waveformRef = useRef(waveform);
+  waveformRef.current = waveform;
+
   // 3b. Pattern Storage & Management System
   const [patternList, setPatternList] = useState<SavedPattern[]>(() => PatternManager.getAllPatterns());
-  const [activePatternId, setActivePatternId] = useState<string | null>('pat-acid-hardfloor-303');
+  const [activePatternId, setActivePatternId] = useState<string | null>(() => {
+    const savedActive = PatternManager.loadActivePatternState();
+    if (savedActive) return null;
+    return 'pat-tekno-23-free-party';
+  });
 
   // 4. Base Synthesizer Knob Settings (0-127 MIDI space)
   const [baseCutoffCC, setBaseCutoffCCState] = useState(64);
@@ -276,41 +357,335 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     dspAudio.setBaseKnobs(realCutoff, realResonance, realDecay, realEnvMod, realAccent, realDrive);
   }, []);
 
+  // Initialize Pattern: 1. From localStorage active state; 2. Default to Factory Tekno 32-step pattern
+  const [pattern, setPattern] = useState<TB303StepData[]>(() => {
+    const savedActive = PatternManager.loadActivePatternState();
+    if (savedActive && savedActive.steps && savedActive.steps.length > 0) {
+      return savedActive.steps;
+    }
+    const teknoPat = FACTORY_PATTERNS.find((p) => p.id === 'pat-tekno-23-free-party') || FACTORY_PATTERNS[0];
+    if (teknoPat && teknoPat.steps) {
+      return JSON.parse(JSON.stringify(teknoPat.steps));
+    }
+    return createEmptyPattern('c_minor_pentatonic', 32);
+  });
+
+  const patternRef = useRef(pattern);
+  patternRef.current = pattern;
+
+  // Pattern & Complete Synth State Undo / Redo History (30 actions)
+  const undoStackRef = useRef<FullEngineSnapshot[]>([]);
+  const redoStackRef = useRef<FullEngineSnapshot[]>([]);
+  const [undoCount, setUndoCount] = useState<number>(0);
+  const [redoCount, setRedoCount] = useState<number>(0);
+
+  const isApplyingSnapshotRef = useRef<boolean>(false);
+  const dragStartSnapshotRef = useRef<FullEngineSnapshot | null>(null);
+  const sliderDebounceTimerRef = useRef<any>(null);
+
+  const createSnapshot = useCallback((desc: string): FullEngineSnapshot => ({
+    desc,
+    timestamp: Date.now(),
+    pattern: JSON.parse(JSON.stringify(patternRef.current)),
+    cutoffCC: baseCutoffRef.current,
+    resonanceCC: baseResonanceRef.current,
+    envModCC: baseEnvModRef.current,
+    decayCC: baseDecayRef.current,
+    accentCC: baseAccentRef.current,
+    driveCC: baseDriveRef.current,
+    morphAmount: morphAmountRef.current,
+    morphResonance: morphResonanceRef.current,
+    isMorphEnabled: isMorphEnabledRef.current,
+    morphType: morphTypeRef.current,
+    bpm: bpmRef.current,
+    scale: scaleRef.current,
+    stepLength: stepLengthRef.current,
+    waveform: waveformRef.current,
+    dspCharacterMode: dspCharacterModeRef.current,
+    electronFlux: electronFluxRef.current,
+    electronMode: electronModeRef.current,
+    electronSolo: electronSoloRef.current,
+    isPitchLfoEnabled: isPitchLfoEnabledRef.current,
+    pitchLfoRate: pitchLfoRateRef.current,
+    pitchLfoDepth: pitchLfoDepthRef.current,
+    spatialRainMode: spatialRainModeRef.current,
+    specs: { ...specsRef.current },
+  }), []);
+
+  // Universal CPU-Safe Continuous Slider Change Recorder (Debounced 350ms Gesture Capture)
+  const recordContinuousChange = useCallback((desc: string) => {
+    if (isApplyingSnapshotRef.current) return;
+
+    // Capture pristine state at the beginning of the slider interaction
+    if (!dragStartSnapshotRef.current) {
+      dragStartSnapshotRef.current = createSnapshot(desc);
+    }
+
+    if (sliderDebounceTimerRef.current) {
+      clearTimeout(sliderDebounceTimerRef.current);
+    }
+
+    sliderDebounceTimerRef.current = setTimeout(() => {
+      if (isApplyingSnapshotRef.current) {
+        dragStartSnapshotRef.current = null;
+        return;
+      }
+      if (dragStartSnapshotRef.current) {
+        undoStackRef.current = [...undoStackRef.current.slice(-29), dragStartSnapshotRef.current];
+        redoStackRef.current = [];
+        setUndoCount(undoStackRef.current.length);
+        setRedoCount(0);
+        dragStartSnapshotRef.current = null;
+      }
+    }, 350);
+  }, [createSnapshot]);
+
+  // Instant Discrete Action Snapshot (Buttons, Switches, Presets, Step toggles)
+  const pushSnapshot = useCallback((desc: string) => {
+    if (isApplyingSnapshotRef.current) return;
+
+    if (sliderDebounceTimerRef.current) {
+      clearTimeout(sliderDebounceTimerRef.current);
+      sliderDebounceTimerRef.current = null;
+    }
+    dragStartSnapshotRef.current = null;
+
+    const snap = createSnapshot(desc);
+    undoStackRef.current = [...undoStackRef.current.slice(-29), snap];
+    redoStackRef.current = [];
+    setUndoCount(undoStackRef.current.length);
+    setRedoCount(0);
+  }, [createSnapshot]);
+
+  const applySnapshot = useCallback((snap: FullEngineSnapshot) => {
+    isApplyingSnapshotRef.current = true;
+
+    // 1. Pattern
+    if (snap.pattern && snap.pattern.length > 0) {
+      setPattern(snap.pattern);
+      patternRef.current = snap.pattern;
+    }
+
+    // 2. Knobs
+    baseCutoffRef.current = snap.cutoffCC;
+    setBaseCutoffCCState(snap.cutoffCC);
+    baseResonanceRef.current = snap.resonanceCC;
+    setBaseResonanceCCState(snap.resonanceCC);
+    baseEnvModRef.current = snap.envModCC;
+    setBaseEnvModCCState(snap.envModCC);
+    baseDecayRef.current = snap.decayCC;
+    setBaseDecayCCState(snap.decayCC);
+    baseAccentRef.current = snap.accentCC;
+    setBaseAccentCCState(snap.accentCC);
+    baseDriveRef.current = snap.driveCC;
+    setBaseDriveCCState(snap.driveCC);
+    syncDspKnobs();
+
+    // 3. Morph Filter
+    isMorphEnabledRef.current = snap.isMorphEnabled;
+    setIsMorphEnabledState(snap.isMorphEnabled);
+    morphAmountRef.current = snap.morphAmount;
+    setMorphAmountState(snap.morphAmount);
+    morphTypeRef.current = snap.morphType;
+    setMorphTypeState(snap.morphType);
+    morphResonanceRef.current = snap.morphResonance;
+    setMorphResonanceState(snap.morphResonance);
+    dspAudio.setMorphFilter(snap.morphAmount / 100, snap.morphType, snap.morphResonance);
+    dspAudio.setMorphEnabled(snap.isMorphEnabled);
+
+    // 4. Sequencer
+    bpmRef.current = snap.bpm;
+    setBpmState(snap.bpm);
+    scaleRef.current = snap.scale;
+    setScaleState(snap.scale);
+    stepLengthRef.current = snap.stepLength;
+    setStepLengthState(snap.stepLength);
+    waveformRef.current = snap.waveform;
+    setWaveformState(snap.waveform);
+    dspAudio.setWaveform(snap.waveform);
+
+    // 5. Sound modes & electron physics
+    dspCharacterModeRef.current = snap.dspCharacterMode;
+    setDspCharacterModeState(snap.dspCharacterMode);
+    dspAudio.setCharacterMode(snap.dspCharacterMode);
+
+    electronFluxRef.current = snap.electronFlux;
+    setElectronFluxState(snap.electronFlux);
+    dspAudio.setElectronFluxAmount(snap.electronFlux / 100);
+
+    electronModeRef.current = snap.electronMode;
+    setElectronModeState(snap.electronMode);
+    dspAudio.setElectronMode(snap.electronMode);
+
+    electronSoloRef.current = snap.electronSolo;
+    setElectronSoloState(snap.electronSolo);
+    dspAudio.setElectronSolo(snap.electronSolo);
+
+    // 6. LFO & Pan
+    isPitchLfoEnabledRef.current = snap.isPitchLfoEnabled;
+    setIsPitchLfoEnabledState(snap.isPitchLfoEnabled);
+    dspAudio.setPitchLfoEnabled(snap.isPitchLfoEnabled);
+
+    pitchLfoRateRef.current = snap.pitchLfoRate;
+    setPitchLfoRateState(snap.pitchLfoRate);
+    dspAudio.setPitchLfoRate(snap.pitchLfoRate);
+
+    pitchLfoDepthRef.current = snap.pitchLfoDepth;
+    setPitchLfoDepthState(snap.pitchLfoDepth);
+    dspAudio.setPitchLfoDepth(snap.pitchLfoDepth);
+
+    spatialRainModeRef.current = snap.spatialRainMode;
+    setSpatialRainModeState(snap.spatialRainMode);
+    dspAudio.setSpatialRainMode(snap.spatialRainMode);
+
+    // 7. Specs
+    if (snap.specs) {
+      specsRef.current = { ...snap.specs };
+      setSpecs({ ...snap.specs });
+    }
+
+    setTimeout(() => {
+      isApplyingSnapshotRef.current = false;
+      dragStartSnapshotRef.current = null;
+      if (sliderDebounceTimerRef.current) {
+        clearTimeout(sliderDebounceTimerRef.current);
+        sliderDebounceTimerRef.current = null;
+      }
+    }, 250);
+  }, [syncDspKnobs]);
+
+  const undo = useCallback(() => {
+    if (sliderDebounceTimerRef.current) {
+      clearTimeout(sliderDebounceTimerRef.current);
+      sliderDebounceTimerRef.current = null;
+    }
+    dragStartSnapshotRef.current = null;
+
+    if (undoStackRef.current.length === 0) return;
+    const current = createSnapshot('Текущее состояние');
+    const target = undoStackRef.current.pop();
+    if (!target) return;
+
+    redoStackRef.current = [...redoStackRef.current.slice(-29), current];
+    applySnapshot(target);
+    setUndoCount(undoStackRef.current.length);
+    setRedoCount(redoStackRef.current.length);
+    setMidiByteLog((prev) => [`[UNDO] Откат назад: ${target.desc} (Осталось: ${undoStackRef.current.length})`, ...prev.slice(0, 5)]);
+  }, [applySnapshot, createSnapshot]);
+
+  const redo = useCallback(() => {
+    if (sliderDebounceTimerRef.current) {
+      clearTimeout(sliderDebounceTimerRef.current);
+      sliderDebounceTimerRef.current = null;
+    }
+    dragStartSnapshotRef.current = null;
+
+    if (redoStackRef.current.length === 0) return;
+    const current = createSnapshot('Предыдущее состояние');
+    const target = redoStackRef.current.pop();
+    if (!target) return;
+
+    undoStackRef.current = [...undoStackRef.current.slice(-29), current];
+    applySnapshot(target);
+    setUndoCount(undoStackRef.current.length);
+    setRedoCount(redoStackRef.current.length);
+    setMidiByteLog((prev) => [`[REDO] Откат вперед: ${target.desc} (Осталось: ${redoStackRef.current.length})`, ...prev.slice(0, 5)]);
+  }, [applySnapshot, createSnapshot]);
+
+  const setSpatialRainMode = useCallback((mode: SpatialRainMode) => {
+    pushSnapshot(`Панорама: ${mode.toUpperCase()}`);
+    spatialRainModeRef.current = mode;
+    setSpatialRainModeState(mode);
+    dspAudio.setSpatialRainMode(mode);
+  }, [pushSnapshot]);
+
+  const toggleSpatialRainMode = useCallback(() => {
+    const prev = spatialRainModeRef.current;
+    const next: SpatialRainMode =
+      prev === 'off'
+        ? 'pingpong'
+        : prev === 'pingpong'
+        ? 'drops'
+        : prev === 'drops'
+        ? 'spiral'
+        : 'off';
+    pushSnapshot(`Смена панорамы: ${next.toUpperCase()}`);
+    spatialRainModeRef.current = next;
+    setSpatialRainModeState(next);
+    dspAudio.setSpatialRainMode(next);
+  }, [pushSnapshot]);
+
   const setBaseCutoffCC = useCallback((val: number) => {
+    recordContinuousChange(`Cutoff: ${val}`);
     baseCutoffRef.current = val;
     setBaseCutoffCCState(val);
     syncDspKnobs();
-  }, [syncDspKnobs]);
+  }, [recordContinuousChange, syncDspKnobs]);
 
   const setBaseResonanceCC = useCallback((val: number) => {
+    recordContinuousChange(`Resonance: ${val}`);
     baseResonanceRef.current = val;
     setBaseResonanceCCState(val);
     syncDspKnobs();
-  }, [syncDspKnobs]);
+  }, [recordContinuousChange, syncDspKnobs]);
 
   const setBaseEnvModCC = useCallback((val: number) => {
+    recordContinuousChange(`EnvMod: ${val}`);
     baseEnvModRef.current = val;
     setBaseEnvModCCState(val);
     syncDspKnobs();
-  }, [syncDspKnobs]);
+  }, [recordContinuousChange, syncDspKnobs]);
 
   const setBaseDecayCC = useCallback((val: number) => {
+    recordContinuousChange(`Decay: ${val}`);
     baseDecayRef.current = val;
     setBaseDecayCCState(val);
     syncDspKnobs();
-  }, [syncDspKnobs]);
+  }, [recordContinuousChange, syncDspKnobs]);
 
   const setBaseAccentCC = useCallback((val: number) => {
+    recordContinuousChange(`Accent: ${val}`);
     baseAccentRef.current = val;
     setBaseAccentCCState(val);
     syncDspKnobs();
-  }, [syncDspKnobs]);
+  }, [recordContinuousChange, syncDspKnobs]);
 
   const setBaseDriveCC = useCallback((val: number) => {
+    recordContinuousChange(`Drive: ${val}`);
     baseDriveRef.current = val;
     setBaseDriveCCState(val);
     syncDspKnobs();
-  }, [syncDspKnobs]);
+  }, [recordContinuousChange, syncDspKnobs]);
+
+  const setAllBaseKnobsCC = useCallback((
+    cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; morph?: number },
+    resonance?: number,
+    decay?: number,
+    envMod?: number,
+    accent?: number,
+    drive?: number,
+    morph?: number
+  ) => {
+    recordContinuousChange('Macro Knobs');
+    if (typeof cutoff === 'object' && cutoff !== null) {
+      if (cutoff.cutoff !== undefined) { baseCutoffRef.current = cutoff.cutoff; setBaseCutoffCCState(cutoff.cutoff); }
+      if (cutoff.resonance !== undefined) { baseResonanceRef.current = cutoff.resonance; setBaseResonanceCCState(cutoff.resonance); }
+      if (cutoff.envMod !== undefined) { baseEnvModRef.current = cutoff.envMod; setBaseEnvModCCState(cutoff.envMod); }
+      if (cutoff.decay !== undefined) { baseDecayRef.current = cutoff.decay; setBaseDecayCCState(cutoff.decay); }
+      if (cutoff.accent !== undefined) { baseAccentRef.current = cutoff.accent; setBaseAccentCCState(cutoff.accent); }
+      if (cutoff.drive !== undefined) { baseDriveRef.current = cutoff.drive; setBaseDriveCCState(cutoff.drive); }
+      if (cutoff.morph !== undefined) { morphAmountRef.current = cutoff.morph; setMorphAmountState(cutoff.morph); }
+    } else {
+      if (cutoff !== undefined) { baseCutoffRef.current = cutoff; setBaseCutoffCCState(cutoff); }
+      if (resonance !== undefined) { baseResonanceRef.current = resonance; setBaseResonanceCCState(resonance); }
+      if (decay !== undefined) { baseDecayRef.current = decay; setBaseDecayCCState(decay); }
+      if (envMod !== undefined) { baseEnvModRef.current = envMod; setBaseEnvModCCState(envMod); }
+      if (accent !== undefined) { baseAccentRef.current = accent; setBaseAccentCCState(accent); }
+      if (drive !== undefined) { baseDriveRef.current = drive; setBaseDriveCCState(drive); }
+      if (morph !== undefined) { morphAmountRef.current = morph; setMorphAmountState(morph); }
+    }
+    syncDspKnobs();
+  }, [recordContinuousChange, syncDspKnobs]);
 
   // Static Knobs Mode: locks knobs to steady position (no jitter/twitching from step telemetry)
   const [isStaticKnobsLocked, setIsStaticKnobsLocked] = useState(true);
@@ -333,79 +708,6 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     depthLfoCC76: 32,
     cutoffCC74: 80,
   });
-
-  // Initialize Pattern: 1. From localStorage active state; 2. Default to Factory 32-step pattern
-  const [pattern, setPattern] = useState<TB303StepData[]>(() => {
-    const savedActive = PatternManager.loadActivePatternState();
-    if (savedActive && savedActive.steps && savedActive.steps.length > 0) {
-      return savedActive.steps;
-    }
-    const defaultPat = FACTORY_PATTERNS[0];
-    if (defaultPat && defaultPat.steps) {
-      return JSON.parse(JSON.stringify(defaultPat.steps));
-    }
-    return createEmptyPattern('c_minor_pentatonic', 32);
-  });
-
-  const patternRef = useRef(pattern);
-  patternRef.current = pattern;
-
-  // Pattern Undo / Redo History (bounded to max 5 actions)
-  const undoStackRef = useRef<Array<{ pattern: TB303StepData[]; desc: string }>>([]);
-  const redoStackRef = useRef<Array<{ pattern: TB303StepData[]; desc: string }>>([]);
-  const [undoCount, setUndoCount] = useState<number>(0);
-  const [redoCount, setRedoCount] = useState<number>(0);
-
-  const pushSnapshot = useCallback((desc: string) => {
-    const current = patternRef.current;
-    if (!current || current.length === 0) return;
-    const cloned: TB303StepData[] = JSON.parse(JSON.stringify(current));
-    // Up to 5 actions kept in undo history
-    undoStackRef.current = [...undoStackRef.current.slice(-4), { pattern: cloned, desc }];
-    redoStackRef.current = []; // Clear redo stack on new action
-    setUndoCount(undoStackRef.current.length);
-    setRedoCount(0);
-  }, []);
-
-  const undo = useCallback(() => {
-    if (undoStackRef.current.length === 0) return;
-    const current = patternRef.current;
-    const last = undoStackRef.current.pop();
-    if (!last) return;
-
-    if (current) {
-      redoStackRef.current = [
-        ...redoStackRef.current.slice(-4),
-        { pattern: JSON.parse(JSON.stringify(current)), desc: 'Текущее состояние' },
-      ];
-    }
-
-    setPattern(last.pattern);
-    patternRef.current = last.pattern;
-    setUndoCount(undoStackRef.current.length);
-    setRedoCount(redoStackRef.current.length);
-    setMidiByteLog((prev) => [`[UNDO] Откат назад: ${last.desc} (Осталось: ${undoStackRef.current.length}/5)`, ...prev.slice(0, 5)]);
-  }, []);
-
-  const redo = useCallback(() => {
-    if (redoStackRef.current.length === 0) return;
-    const current = patternRef.current;
-    const next = redoStackRef.current.pop();
-    if (!next) return;
-
-    if (current) {
-      undoStackRef.current = [
-        ...undoStackRef.current.slice(-4),
-        { pattern: JSON.parse(JSON.stringify(current)), desc: 'Предыдущее состояние' },
-      ];
-    }
-
-    setPattern(next.pattern);
-    patternRef.current = next.pattern;
-    setUndoCount(undoStackRef.current.length);
-    setRedoCount(redoStackRef.current.length);
-    setMidiByteLog((prev) => [`[REDO] Откат вперед: ${next.desc} (Осталось: ${redoStackRef.current.length}/5)`, ...prev.slice(0, 5)]);
-  }, []);
 
   // Keyboard Shortcuts for Undo (Ctrl+Z / Cmd+Z) & Redo (Ctrl+Y / Cmd+Y / Ctrl+Shift+Z / Cmd+Shift+Z)
   useEffect(() => {
@@ -447,6 +749,25 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActivePatternId(null);
     setMidiByteLog((prev) => [`[PATTERN] All ${stepLength} steps cleared to empty`, ...prev.slice(0, 5)]);
   }, [pushSnapshot, scale, stepLength]);
+
+  const shiftPatternOctave = useCallback((deltaOctaves: number) => {
+    const deltaSemitones = deltaOctaves * 12;
+    pushSnapshot(deltaOctaves > 0 ? 'Сдвиг всего паттерна: +1 Октава' : 'Сдвиг всего паттерна: -1 Октава');
+    setPattern((prev) =>
+      prev.map((step) => {
+        const nextNote = Math.max(24, Math.min(72, step.note + deltaSemitones));
+        return {
+          ...step,
+          note: nextNote,
+          noteName: midiToNoteName(nextNote),
+        };
+      })
+    );
+    setMidiByteLog((prev) => [
+      `[PATTERN OCTAVE] Сдвиг всего паттерна: ${deltaOctaves > 0 ? '+1 Октава (+12 st)' : '-1 Октава (-12 st)'}`,
+      ...prev.slice(0, 5),
+    ]);
+  }, [pushSnapshot]);
 
   const setStepLength = useCallback((len: number) => {
     const newLen = len === 16 ? 16 : 32;
@@ -521,6 +842,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const keyboardOctaveRef = useRef(36);
   keyboardOctaveRef.current = keyboardOctave;
   const [activePianoKeys, setActivePianoKeys] = useState<Set<string>>(new Set());
+  const heldKeyboardKeysRef = useRef<Set<string>>(new Set());
 
   const startMidiLearn = useCallback((paramId: string) => {
     setActiveLearnParam(paramId);
@@ -652,15 +974,18 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const baseOct = keyboardOctaveRef.current;
         const note = baseOct + matchedNote.offset;
 
-        setActivePianoKeys((prev) => new Set(prev).add(matchedNote.keyChar));
+        // Detect overlapping key presses: if keys are already held down, trigger legato SLIDE!
+        const isSlide = heldKeyboardKeysRef.current.size > 0;
+        heldKeyboardKeysRef.current.add(matchedNote.keyChar);
+        setActivePianoKeys(new Set(heldKeyboardKeysRef.current));
 
         dspAudio.init();
         setIsDspLive(true);
-        dspAudio.triggerLiveNoteOn(note, 108, false);
+        dspAudio.triggerLiveNoteOn(note, 108, isSlide);
         webMidi.sendNoteOn(note, 108);
 
         setMidiByteLog((prev) => [
-          `[KEYBOARD LIVE] ${midiToNoteName(note)} [${matchedNote.keyChar.toUpperCase()}] (Окт: C${Math.floor(baseOct / 12) - 1})`,
+          `[KEYBOARD LIVE] ${midiToNoteName(note)} [${matchedNote.keyChar.toUpperCase()}] ${isSlide ? '⚡ [SLIDE]' : ''} (Окт: C${Math.floor(baseOct / 12) - 1})`,
           ...prev.slice(0, 5),
         ]);
       }
@@ -684,22 +1009,30 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const baseOct = keyboardOctaveRef.current;
         const note = baseOct + matchedNote.offset;
 
-        setActivePianoKeys((prev) => {
-          const next = new Set(prev);
-          next.delete(matchedNote.keyChar);
-          return next;
-        });
+        heldKeyboardKeysRef.current.delete(matchedNote.keyChar);
+        setActivePianoKeys(new Set(heldKeyboardKeysRef.current));
 
-        dspAudio.triggerLiveNoteOff(note);
-        webMidi.sendNoteOff(note);
+        // Only release sound when ALL piano keys are released
+        if (heldKeyboardKeysRef.current.size === 0) {
+          dspAudio.triggerLiveNoteOff(note);
+          webMidi.sendNoteOff(note);
+        }
       }
+    };
+
+    const handleBlur = () => {
+      heldKeyboardKeysRef.current.clear();
+      setActivePianoKeys(new Set());
+      dspAudio.triggerLiveNoteOff();
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: true });
     window.addEventListener('keyup', handleKeyUp, { capture: true });
+    window.addEventListener('blur', handleBlur);
     return () => {
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('keyup', handleKeyUp, { capture: true });
+      window.removeEventListener('blur', handleBlur);
     };
   }, []);
 
@@ -709,11 +1042,9 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const prevSlideRef = useRef<boolean>(false);
 
   // High-performance audio clock refs (prevents UI freezing & ensures zero audio jitter)
-  const bpmRef = useRef(bpm);
   bpmRef.current = bpm;
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
-  const stepLengthRef = useRef(stepLength);
   stepLengthRef.current = stepLength;
   const audioMutedRef = useRef(audioMuted);
   audioMutedRef.current = audioMuted;
@@ -732,73 +1063,95 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Update Morph Filter in Real-Time
   const setIsMorphEnabled = (enabled: boolean) => {
+    pushSnapshot(enabled ? 'Морф-фильтр: ВКЛ' : 'Морф-фильтр: ВЫКЛ');
+    isMorphEnabledRef.current = enabled;
     setIsMorphEnabledState(enabled);
     dspAudio.setMorphEnabled(enabled);
   };
 
   const toggleMorphEnabled = () => {
-    setIsMorphEnabledState((prev) => {
-      const next = !prev;
-      dspAudio.setMorphEnabled(next);
-      return next;
-    });
+    const next = !isMorphEnabledRef.current;
+    pushSnapshot(next ? 'Морф-фильтр: ВКЛ' : 'Морф-фильтр: ВЫКЛ');
+    isMorphEnabledRef.current = next;
+    setIsMorphEnabledState(next);
+    dspAudio.setMorphEnabled(next);
   };
 
   const setMorphAmount = (val: number) => {
+    recordContinuousChange(`Morph: ${val}%`);
+    morphAmountRef.current = val;
     setMorphAmountState(val);
-    dspAudio.setMorphFilter(val / 100, morphType, morphResonance);
+    dspAudio.setMorphFilter(val / 100, morphTypeRef.current, morphResonanceRef.current);
   };
 
   const setMorphType = (type: FilterMorphType) => {
+    pushSnapshot(`Режим морф-фильтра: ${type}`);
+    morphTypeRef.current = type;
     setMorphTypeState(type);
-    dspAudio.setMorphFilter(morphAmount / 100, type, morphResonance);
+    dspAudio.setMorphFilter(morphAmountRef.current / 100, type, morphResonanceRef.current);
   };
 
   const setMorphResonance = (res: number) => {
+    recordContinuousChange(`Morph Res: ${res.toFixed(1)}Q`);
+    morphResonanceRef.current = res;
     setMorphResonanceState(res);
-    dspAudio.setMorphFilter(morphAmount / 100, morphType, res);
+    dspAudio.setMorphFilter(morphAmountRef.current / 100, morphTypeRef.current, res);
   };
 
   // Continuous Pitch LFO Callbacks (Seamless Gapless Bass Vibrato / Drift)
   const setIsPitchLfoEnabled = (enabled: boolean) => {
+    pushSnapshot(enabled ? 'Pitch LFO: ВКЛ' : 'Pitch LFO: ВЫКЛ');
+    isPitchLfoEnabledRef.current = enabled;
     setIsPitchLfoEnabledState(enabled);
     dspAudio.setPitchLfoEnabled(enabled);
-    setMidiByteLog((prev) => [`[PITCH LFO] ${enabled ? 'ENABLED' : 'DISABLED'} (${pitchLfoRate.toFixed(2)}Hz)`, ...prev.slice(0, 5)]);
+    setMidiByteLog((prev) => [`[PITCH LFO] ${enabled ? 'ENABLED' : 'DISABLED'} (${pitchLfoRateRef.current.toFixed(2)}Hz)`, ...prev.slice(0, 5)]);
   };
 
   const togglePitchLfoEnabled = () => {
-    setIsPitchLfoEnabledState((prev) => {
-      const next = !prev;
-      dspAudio.setPitchLfoEnabled(next);
-      setMidiByteLog((log) => [`[PITCH LFO] ${next ? 'ENABLED' : 'DISABLED'} (${pitchLfoRate.toFixed(2)}Hz)`, ...log.slice(0, 5)]);
-      return next;
-    });
+    const next = !isPitchLfoEnabledRef.current;
+    pushSnapshot(next ? 'Pitch LFO: ВКЛ' : 'Pitch LFO: ВЫКЛ');
+    isPitchLfoEnabledRef.current = next;
+    setIsPitchLfoEnabledState(next);
+    dspAudio.setPitchLfoEnabled(next);
+    setMidiByteLog((log) => [`[PITCH LFO] ${next ? 'ENABLED' : 'DISABLED'} (${pitchLfoRateRef.current.toFixed(2)}Hz)`, ...log.slice(0, 5)]);
   };
 
-  const setPitchLfoRate = (rate: number) => {
+  const setPitchLfoRate = (rate: number, recordUndo = true) => {
     const clamped = Math.max(0.05, Math.min(25.0, rate));
+    if (recordUndo) {
+      recordContinuousChange(`LFO Rate: ${clamped.toFixed(1)}Hz`);
+    }
+    pitchLfoRateRef.current = clamped;
     setPitchLfoRateState(clamped);
     dspAudio.setPitchLfoRate(clamped);
   };
 
   const setPitchLfoDepth = (depth: number) => {
     const clamped = Math.max(10, Math.min(1200, depth));
+    recordContinuousChange(`LFO Depth: ±${clamped}c`);
+    pitchLfoDepthRef.current = clamped;
     setPitchLfoDepthState(clamped);
     dspAudio.setPitchLfoDepth(clamped);
   };
 
   const setElectronFlux = (val: number) => {
+    recordContinuousChange(`Electron Flux: ${val}%`);
+    electronFluxRef.current = val;
     setElectronFluxState(val);
     dspAudio.setElectronFluxAmount(val / 100);
   };
 
   const setElectronMode = (mode: ElectronMode) => {
+    pushSnapshot(`Режим физики: ${mode.toUpperCase()}`);
+    electronModeRef.current = mode;
     setElectronModeState(mode);
     dspAudio.setElectronMode(mode);
     setMidiByteLog((prev) => [`[PHYSICS] Switched Electron Mode: ${mode.toUpperCase()}`, ...prev.slice(0, 5)]);
   };
 
   const setElectronSolo = (solo: boolean) => {
+    pushSnapshot(solo ? 'Соло электронов: ВКЛ' : 'Соло электронов: ВЫКЛ');
+    electronSoloRef.current = solo;
     setElectronSoloState(solo);
     dspAudio.setElectronSolo(solo);
     setMidiByteLog((prev) => [`[PHYSICS] Electron Particle Audition Solo: ${solo ? 'ON' : 'OFF'}`, ...prev.slice(0, 5)]);
@@ -815,17 +1168,45 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [specs.temperatureKelvin, specs.tiaGainRf, specs.conductanceDriftStd, electronFlux]);
 
   const setDspCharacterMode = (mode: DSPCharacterMode) => {
+    pushSnapshot(`DSP Характер: ${mode}`);
+    dspCharacterModeRef.current = mode;
     setDspCharacterModeState(mode);
     dspAudio.setCharacterMode(mode);
   };
 
   const setWaveform = (wf: 'sawtooth' | 'square') => {
+    pushSnapshot(`Форма волны: ${wf.toUpperCase()}`);
+    waveformRef.current = wf;
     setWaveformState(wf);
     dspAudio.setWaveform(wf);
   };
 
+  const setScale = (newScale: ScaleName) => {
+    pushSnapshot(`Гамма: ${newScale}`);
+    scaleRef.current = newScale;
+    setScaleState(newScale);
+
+    // Explicit user action: update pattern notes to match selected scale
+    const scaleNotes = SCALES[newScale]?.notes || SCALES['c_minor_pentatonic'].notes;
+    setPattern((prev) =>
+      prev.map((step, idx) => {
+        const newNote = scaleNotes[idx % scaleNotes.length];
+        return {
+          ...step,
+          note: newNote,
+          noteName: midiToNoteName(newNote),
+        };
+      })
+    );
+  };
+
   const updateSpecField = (field: keyof AnalogHardwareSpecs, value: number) => {
-    setSpecs((prev) => ({ ...prev, [field]: value }));
+    recordContinuousChange(`Параметр ${String(field)}`);
+    setSpecs((prev) => {
+      const updated = { ...prev, [field]: value };
+      specsRef.current = updated;
+      return updated;
+    });
   };
 
   // Sync Base Knobs with DSP Engine continuously
@@ -1327,26 +1708,6 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     dspAudio.triggerStep(mockStep, 0.18, isSld);
   }, [baseDecayCC, baseDriveCC, ccState.depthLfoCC76, morphResonance, morphType, scale]);
 
-  const isScaleInitializedRef = useRef(false);
-  useEffect(() => {
-    if (!isScaleInitializedRef.current) {
-      isScaleInitializedRef.current = true;
-      return;
-    }
-    // Only transpose pitches of existing steps if user changes scale, leaving gates intact
-    const scaleNotes = SCALES[scale].notes;
-    setPattern((prev) =>
-      prev.map((step, idx) => {
-        const newNote = scaleNotes[idx % scaleNotes.length];
-        return {
-          ...step,
-          note: newNote,
-          noteName: midiToNoteName(newNote),
-        };
-      })
-    );
-  }, [scale]);
-
   const updateStep = useCallback((stepIdx: number, partial: Partial<TB303StepData>) => {
     pushSnapshot(`Шаг #${stepIdx + 1}`);
     setPattern((prev) => {
@@ -1515,9 +1876,10 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Instant BPM reactivity: updates bpmRef immediately and synchronizes state
   const setBpm = useCallback((newBpm: number) => {
     const clamped = Math.max(40, Math.min(260, Math.round(newBpm)));
+    recordContinuousChange(`BPM: ${clamped}`);
     bpmRef.current = clamped;
     setBpmState(clamped);
-  }, []);
+  }, [recordContinuousChange]);
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -1627,6 +1989,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         viewMode,
         setViewMode,
         clearPattern,
+        shiftPatternOctave,
         setPattern,
         baseCutoffCC,
         setBaseCutoffCC,
@@ -1640,6 +2003,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setBaseAccentCC,
         baseDriveCC,
         setBaseDriveCC,
+        setAllBaseKnobsCC,
         isStaticKnobsLocked,
         setIsStaticKnobsLocked,
         toggleStaticKnobs,
@@ -1676,6 +2040,10 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         redoCount,
         undo,
         redo,
+        // Spatial Rain Mirror Pan Filter
+        spatialRainMode,
+        setSpatialRainMode,
+        toggleSpatialRainMode,
         midiMappings,
         activeLearnParam,
         startMidiLearn,

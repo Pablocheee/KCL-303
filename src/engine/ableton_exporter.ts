@@ -174,7 +174,7 @@ export async function generateAbletonPluginZip(): Promise<Blob> {
         { cc: 94, name: "Diode Drive / Distortion", range: "0 - 127", desc: "Asymmetric saturation & memristor power" },
         { cc: 1, name: "Modulation Wheel (TR-8S Morph)", range: "0 - 127", desc: "Bipolar Morph: 0 = LPF, 64 = Flat, 127 = HPF / Formant" },
         { cc: 76, name: "Quantum Electron Flux", range: "0 - 127", desc: "Johnson-Nyquist & Poisson shot noise intensity" },
-        { cc: 72, name: "Morph Resonance Peak", range: "0 - 127", desc: "Roland TR-8S morph filter Q width" }
+        { cc: 72, name: "Morph Resonance Peak", range: "0 - 127", desc: "TR-8S morph filter Q width" }
       ]
     },
     null,
@@ -183,7 +183,7 @@ export async function generateAbletonPluginZip(): Promise<Blob> {
 
   // 4. Detailed Installation Guide (.txt)
   const readmeText = `================================================================================
-NEURAL TB-303 + ROLAND TR-8S MORPH SYNTHESIZER
+NEURAL TB-303 + TR-8S MORPH SYNTHESIZER
 ABLETON LIVE PLUGIN INSTALLATION & SETUP GUIDE
 ================================================================================
 
@@ -227,7 +227,7 @@ Option B: Ableton MIDI Clip & External Instrument Bridge:
 - CC 71: VCF Resonance / Entropy Q (1Q - 26Q Self-Oscillation)
 - CC 75: VCF Decay Time (80ms - 580ms)
 - CC 94: Diode Overdrive & Memristor Power (0% - 100%)
-- CC 1 : Modulation Wheel -> Roland TR-8S Bipolar Morph Filter
+- CC 1 : Modulation Wheel -> TR-8S Bipolar Morph Filter
          (0 = Dark LPF, 64 = Center Flat, 127 = Sizzling HPF / Vowel Formant)
 - CC 76: Quantum Electron Flux & Shot Noise (0% - 100%)
 - CC 72: Morph Resonance Peak Width

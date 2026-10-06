@@ -16,9 +16,10 @@ import { AnalogCrossbarVisualizer } from './components/AnalogCrossbarVisualizer'
 import { Neural303Visualizer } from './components/Neural303Visualizer';
 import { MidiSettingsModal } from './components/MidiSettingsModal';
 import { EngineProvider, useEngine } from './context/EngineContext';
+import { LanguageProvider, useLanguage } from './i18n/translations';
 import { CodeViewer } from './components/CodeViewer';
 import type { LayerStats, InferenceResult, ModelMetadata } from './engine/types';
-import { Cpu, Terminal, Laptop, Activity, Layers, Sparkles, BookOpen, Binary, Zap, Music, Undo2, Redo2, Sliders, Keyboard } from 'lucide-react';
+import { Cpu, Terminal, Laptop, Activity, Layers, Sparkles, BookOpen, Binary, Zap, Music, Undo2, Redo2, Sliders, Keyboard, Globe } from 'lucide-react';
 
 function MainApp() {
   const {
@@ -33,6 +34,8 @@ function MainApp() {
     keyboardOctave,
     selectedMidiInputId,
   } = useEngine();
+
+  const { t, language, toggleLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState<'tb303' | 'analog'>('tb303');
   const [activeToolSubTab, setActiveToolSubTab] = useState<'llm' | 'converter' | 'visualizer' | 'hardware' | 'code'>('llm');
   const [modelMeta, setModelMeta] = useState<ModelMetadata | null>(null);
@@ -186,38 +189,39 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-[#070b12] text-slate-100 flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200">
       {/* Main Navigation Bar: 2 Sound Tabs + 1 Unified Tools Tab */}
-      <div className="border-b border-slate-800/80 bg-[#0a0f18]/90 backdrop-blur sticky top-0 z-30 px-3 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 overflow-x-auto py-1.5">
-          <div className="flex items-center gap-2">
-            {/* 1. Main Sound Tab: Neural Roland TB-303 */}
+      <div className="border-b border-slate-800/80 bg-[#0a0f18]/90 backdrop-blur sticky top-0 z-30 px-2 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-2 py-1.5 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            {/* 1. Main Sound Tab: TB-303 */}
             <button
               onClick={() => setActiveTab('tb303')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-mono font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-1.5 sm:py-2 text-xs font-mono font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
                 activeTab === 'tb303'
                   ? 'bg-red-950/50 border-red-500 text-red-400 shadow-[0_0_12px_rgba(239,68,68,0.3)] ring-1 ring-red-500/50'
                   : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
               }`}
             >
-              <Music className={`w-4 h-4 ${activeTab === 'tb303' ? 'text-red-500' : 'text-slate-400'}`} />
-              <span>Neural Roland TB-303</span>
+              <Music className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'tb303' ? 'text-red-500' : 'text-slate-400'}`} />
+              <span>{t('tb303Tab')}</span>
             </button>
 
             {/* 2. Sound-Affecting Hardware Tab: Neuromorphic Analog Crossbar */}
             <button
               onClick={() => setActiveTab('analog')}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-mono font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-1.5 sm:py-2 text-xs font-mono font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
                 activeTab === 'analog'
                   ? 'bg-amber-950/50 border-amber-400 text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.3)] ring-1 ring-amber-400/50'
                   : 'border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
               }`}
             >
-              <Zap className={`w-4 h-4 ${activeTab === 'analog' ? 'text-amber-400' : 'text-slate-400'}`} />
-              <span>Neuromorphic Analog Crossbar</span>
+              <Zap className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${activeTab === 'analog' ? 'text-amber-400' : 'text-slate-400'}`} />
+              <span className="hidden sm:inline">{t('analogTab')}</span>
+              <span className="sm:hidden">{language === 'ru' ? 'Аналог' : 'Analog'}</span>
             </button>
           </div>
 
-          {/* 3. Compact Undo/Redo & MIDI Controls */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          {/* 3. Compact Undo/Redo & MIDI & Language Controls */}
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* 2 Small Compact Arrow Buttons: Undo & Redo (up to 5 actions) */}
             <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-lg border border-slate-800 text-xs font-mono shadow-sm">
               {/* Compact Откат назад (Undo) */}
@@ -230,7 +234,7 @@ function MainApp() {
                     ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-slate-700 shadow-[0_0_8px_rgba(245,158,11,0.25)]'
                     : 'text-slate-600 bg-slate-950/40 border border-slate-900 cursor-not-allowed opacity-40'
                 }`}
-                title={canUndo ? `Откат назад (Ctrl+Z) — Доступно: ${undoCount}/5` : 'Нет действий для отката назад (Ctrl+Z)'}
+                title={canUndo ? `${t('undoTitle')} — ${t('undoAvailable')}: ${undoCount}` : t('undoTitle')}
               >
                 <Undo2 className="w-3.5 h-3.5" />
                 {undoCount > 0 && (
@@ -250,7 +254,7 @@ function MainApp() {
                     ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white border border-slate-700 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                     : 'text-slate-600 bg-slate-950/40 border border-slate-900 cursor-not-allowed opacity-40'
                 }`}
-                title={canRedo ? `Откат вперед (Ctrl+Y / Ctrl+Shift+Z) — Доступно: ${redoCount}/5` : 'Нет действий для отката вперед (Ctrl+Y)'}
+                title={canRedo ? `${t('redoTitle')} — ${t('undoAvailable')}: ${redoCount}` : t('redoTitle')}
               >
                 <Redo2 className="w-3.5 h-3.5" />
                 {redoCount > 0 && (
@@ -261,16 +265,6 @@ function MainApp() {
               </button>
             </div>
 
-            {/* Computer Keyboard Piano Modal Button (Compact Icon) */}
-            <button
-              type="button"
-              onClick={() => setIsMidiModalOpen(true)}
-              className="w-7 h-7 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-amber-300 transition cursor-pointer flex items-center justify-center shadow-sm active:scale-95"
-              title="Компьютерная клавиатура: играйте на буквах A-K, октавы Z и X. Нажмите для настроек."
-            >
-              <Keyboard className="w-3.5 h-3.5 text-amber-400" />
-            </button>
-
             {/* Compact MIDI Settings & Learn Button */}
             <button
               type="button"
@@ -280,11 +274,22 @@ function MainApp() {
                   ? 'bg-emerald-950/70 hover:bg-emerald-900 border-emerald-500/80 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
                   : 'bg-slate-900/90 hover:bg-slate-800 border-slate-800 hover:border-slate-700 text-slate-300'
               }`}
-              title="Настройки MIDI и MIDI Learn (подключение MIDI-клавиатуры и привязка фейдеров)"
+              title={t('midiSettingsTitle')}
             >
               <Sliders className="w-3.5 h-3.5 text-indigo-400" />
               <span className="hidden sm:inline">MIDI</span>
               <span className={`w-1.5 h-1.5 rounded-full ${selectedMidiInputId ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+            </button>
+
+            {/* Mini Language Switcher Button (RU / EN) */}
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="h-7 px-2 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs font-bold font-mono transition cursor-pointer flex items-center gap-1.5 shadow active:scale-95 text-slate-300 hover:text-sky-300"
+              title={t('langToggleTitle')}
+            >
+              <Globe className="w-3.5 h-3.5 text-sky-400" />
+              <span className="font-mono text-xs">{language.toUpperCase()}</span>
             </button>
           </div>
         </div>
@@ -323,8 +328,10 @@ function MainApp() {
 
 export default function App() {
   return (
-    <EngineProvider>
-      <MainApp />
-    </EngineProvider>
+    <LanguageProvider>
+      <EngineProvider>
+        <MainApp />
+      </EngineProvider>
+    </LanguageProvider>
   );
 }

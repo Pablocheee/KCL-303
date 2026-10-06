@@ -43,7 +43,7 @@ export const AbletonBridgeModal: React.FC<AbletonBridgeModalProps> = ({ isOpen, 
     { cc: 94, name: 'Diode Drive / Distortion', range: '0 - 127', desc: 'Asymmetric saturation & memristor power' },
     { cc: 1, name: 'Modulation Wheel (TR-8S Morph)', range: '0 - 127', desc: 'Bipolar Morph: 0 = LPF, 64 = Flat, 127 = HPF / Formant' },
     { cc: 76, name: 'Quantum Electron Flux', range: '0 - 127', desc: 'Johnson-Nyquist & Poisson shot noise intensity' },
-    { cc: 72, name: 'Morph Resonance Peak', range: '0 - 127', desc: 'Roland TR-8S morph filter Q width' },
+    { cc: 72, name: 'Morph Resonance Peak', range: '0 - 127', desc: 'TR-8S morph filter Q width' },
   ];
 
   const exportAbletonMappingJson = () => {

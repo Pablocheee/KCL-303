@@ -48,10 +48,58 @@ export function createEmptyPattern(scale: ScaleName, totalSteps = 32): TB303Step
   return steps;
 }
 
-// 9 Rich Factory Patterns: Acid, Tribcore & Tekno
+// 9 Rich Factory Patterns: Tekno, Acid & Tribcore
 export const FACTORY_PATTERNS: SavedPattern[] = [
   // ==========================================
-  // 1. ACID PATTERNS (138 - 144 BPM)
+  // 1. TEKNO / ACIDCORE (DEFAULT FACTORY PATTERN 162 BPM)
+  // ==========================================
+  {
+    id: 'pat-tekno-23-free-party',
+    name: 'Free Tekno 23 Soundsystem',
+    category: 'Tekno',
+    bpm: 162,
+    scale: 'c_minor_pentatonic',
+    stepLength: 32,
+    createdAt: 1710000006000,
+    isFactory: true,
+    steps: [
+      { stepIndex: 0, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.95 },
+      { stepIndex: 1, gate: false, tie: false, note: 36, noteName: 'C1', velocity: 0, accent: false, slide: false, octaveUp: false, rawActivation: 0 },
+      { stepIndex: 2, gate: true, tie: false, note: 48, noteName: 'C2', velocity: 90, accent: false, slide: true, octaveUp: true, rawActivation: 0.75 },
+      { stepIndex: 3, gate: true, tie: false, note: 51, noteName: 'D#2', velocity: 127, accent: true, slide: false, octaveUp: true, rawActivation: 0.9 },
+      { stepIndex: 4, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.95 },
+      { stepIndex: 5, gate: true, tie: false, note: 39, noteName: 'D#1', velocity: 80, accent: false, slide: true, octaveUp: false, rawActivation: 0.65 },
+      { stepIndex: 6, gate: true, tie: false, note: 41, noteName: 'F1', velocity: 127, accent: true, slide: true, octaveUp: false, rawActivation: 0.9 },
+      { stepIndex: 7, gate: true, tie: false, note: 43, noteName: 'G1', velocity: 80, accent: false, slide: false, octaveUp: false, rawActivation: 0.6 },
+      { stepIndex: 8, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.9 },
+      { stepIndex: 9, gate: false, tie: false, note: 36, noteName: 'C1', velocity: 0, accent: false, slide: false, octaveUp: false, rawActivation: 0 },
+      { stepIndex: 10, gate: true, tie: false, note: 46, noteName: 'A#1', velocity: 85, accent: false, slide: true, octaveUp: false, rawActivation: 0.7 },
+      { stepIndex: 11, gate: true, tie: false, note: 48, noteName: 'C2', velocity: 127, accent: true, slide: false, octaveUp: true, rawActivation: 0.92 },
+      { stepIndex: 12, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.95 },
+      { stepIndex: 13, gate: true, tie: false, note: 43, noteName: 'G1', velocity: 80, accent: false, slide: true, octaveUp: false, rawActivation: 0.65 },
+      { stepIndex: 14, gate: true, tie: false, note: 41, noteName: 'F1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.88 },
+      { stepIndex: 15, gate: false, tie: false, note: 36, noteName: 'C1', velocity: 0, accent: false, slide: false, octaveUp: false, rawActivation: 0 },
+      // Bar 2
+      { stepIndex: 16, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.95 },
+      { stepIndex: 17, gate: true, tie: false, note: 48, noteName: 'C2', velocity: 85, accent: false, slide: true, octaveUp: true, rawActivation: 0.7 },
+      { stepIndex: 18, gate: true, tie: false, note: 53, noteName: 'F2', velocity: 127, accent: true, slide: true, octaveUp: true, rawActivation: 0.95 },
+      { stepIndex: 19, gate: true, tie: false, note: 51, noteName: 'D#2', velocity: 80, accent: false, slide: false, octaveUp: true, rawActivation: 0.6 },
+      { stepIndex: 20, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.95 },
+      { stepIndex: 21, gate: true, tie: false, note: 46, noteName: 'A#1', velocity: 85, accent: false, slide: true, octaveUp: false, rawActivation: 0.7 },
+      { stepIndex: 22, gate: true, tie: false, note: 43, noteName: 'G1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.9 },
+      { stepIndex: 23, gate: false, tie: false, note: 36, noteName: 'C1', velocity: 0, accent: false, slide: false, octaveUp: false, rawActivation: 0 },
+      { stepIndex: 24, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.95 },
+      { stepIndex: 25, gate: true, tie: false, note: 39, noteName: 'D#1', velocity: 85, accent: false, slide: true, octaveUp: false, rawActivation: 0.7 },
+      { stepIndex: 26, gate: true, tie: false, note: 48, noteName: 'C2', velocity: 127, accent: true, slide: true, octaveUp: true, rawActivation: 0.9 },
+      { stepIndex: 27, gate: true, tie: false, note: 55, noteName: 'G2', velocity: 127, accent: true, slide: false, octaveUp: true, rawActivation: 0.98 },
+      { stepIndex: 28, gate: true, tie: false, note: 36, noteName: 'C1', velocity: 127, accent: true, slide: false, octaveUp: false, rawActivation: 0.95 },
+      { stepIndex: 29, gate: true, tie: false, note: 43, noteName: 'G1', velocity: 80, accent: false, slide: true, octaveUp: false, rawActivation: 0.65 },
+      { stepIndex: 30, gate: true, tie: false, note: 41, noteName: 'F1', velocity: 127, accent: true, slide: true, octaveUp: false, rawActivation: 0.92 },
+      { stepIndex: 31, gate: true, tie: false, note: 39, noteName: 'D#1', velocity: 85, accent: false, slide: false, octaveUp: false, rawActivation: 0.7 },
+    ],
+  },
+  // ==========================================
+  // 2. ACID PATTERNS (138 - 144 BPM)
   // ==========================================
   {
     id: 'pat-acid-hardfloor-303',

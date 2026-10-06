@@ -23,10 +23,12 @@ import {
   Gauge,
 } from 'lucide-react';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 import { SavedPattern, PatternManager } from '../engine/pattern_manager';
 import { SCALES, ScaleName } from '../engine/neural_303_types';
 
 export const PatternManagerSection: React.FC = React.memo(() => {
+  const { t } = useLanguage();
   const {
     patternList,
     activePatternId,
@@ -160,6 +162,16 @@ export const PatternManagerSection: React.FC = React.memo(() => {
               }}
               className="bg-slate-900 border border-slate-700 text-amber-300 font-bold px-2 py-1 rounded focus:outline-none cursor-pointer max-w-[200px] sm:max-w-xs truncate text-xs"
             >
+              <optgroup label="🔊 Tekno / Acidcore (162-168 BPM)" className="bg-slate-950 text-purple-400">
+                {patternList
+                  .filter((p) => p.isFactory && (p.category.includes('Tekno') || p.category.includes('Hardtek')))
+                  .map((pat) => (
+                    <option key={pat.id} value={pat.id} className="bg-slate-900 text-slate-100">
+                      [{pat.bpm} BPM] {pat.name}
+                    </option>
+                  ))}
+              </optgroup>
+
               <optgroup label="⚡ Acid Patterns (138-144 BPM)" className="bg-slate-950 text-amber-400">
                 {patternList
                   .filter((p) => p.isFactory && p.category.includes('Acid'))
@@ -173,16 +185,6 @@ export const PatternManagerSection: React.FC = React.memo(() => {
               <optgroup label="🔥 Tribcore (180-190 BPM)" className="bg-slate-950 text-rose-400">
                 {patternList
                   .filter((p) => p.isFactory && p.category.includes('Tribcore'))
-                  .map((pat) => (
-                    <option key={pat.id} value={pat.id} className="bg-slate-900 text-slate-100">
-                      [{pat.bpm} BPM] {pat.name}
-                    </option>
-                  ))}
-              </optgroup>
-
-              <optgroup label="🔊 Tekno / Acidcore (162-168 BPM)" className="bg-slate-950 text-purple-400">
-                {patternList
-                  .filter((p) => p.isFactory && (p.category.includes('Tekno') || p.category.includes('Hardtek')))
                   .map((pat) => (
                     <option key={pat.id} value={pat.id} className="bg-slate-900 text-slate-100">
                       [{pat.bpm} BPM] {pat.name}
@@ -414,7 +416,7 @@ export const PatternManagerSection: React.FC = React.memo(() => {
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <span className="text-sm font-black uppercase text-amber-400 flex items-center gap-2">
                 <Save className="w-4 h-4" />
-                <span>Сохранить паттерн в память</span>
+                <span>{t('savePatternTitle')}</span>
               </span>
               <button
                 type="button"
@@ -427,7 +429,7 @@ export const PatternManagerSection: React.FC = React.memo(() => {
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1 font-bold">Название паттерна:</label>
+                <label className="block text-slate-400 mb-1 font-bold">{t('patternNameLabel')}</label>
                 <input
                   type="text"
                   required
@@ -439,7 +441,7 @@ export const PatternManagerSection: React.FC = React.memo(() => {
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-bold">Категория / Стиль:</label>
+                <label className="block text-slate-400 mb-1 font-bold">{t('patternCategoryLabel')}</label>
                 <input
                   type="text"
                   value={newPatternCategory}
@@ -450,7 +452,7 @@ export const PatternManagerSection: React.FC = React.memo(() => {
               </div>
 
               <div className="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded border border-slate-800">
-                Сохранится вся 32-шаговая последовательность нот, акцентов, слайдов, темп ({bpm} BPM) и лад ({SCALES[scale]?.name}). Паттерн не сотрется при переходе между вкладками или перезагрузке страницы!
+                {t('patternSaveInfo')}
               </div>
             </div>
 
@@ -460,14 +462,14 @@ export const PatternManagerSection: React.FC = React.memo(() => {
                 onClick={() => setIsSaveModalOpen(false)}
                 className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer font-bold text-xs"
               >
-                Отмена
+                {t('cancelBtn')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black cursor-pointer shadow text-xs flex items-center gap-1.5"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>Сохранить</span>
+                <span>{t('saveBtn')}</span>
               </button>
             </div>
           </form>

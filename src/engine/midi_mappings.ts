@@ -85,7 +85,7 @@ export const MIDI_PARAMS: MidiParamDefinition[] = [
     min: -100,
     max: 100,
     unit: '%',
-    description: 'Биполярный морфинг High-Pass / Low-Pass фильтра Roland TR-8S',
+    description: 'Биполярный морфинг High-Pass / Low-Pass фильтра TR-8S',
   },
   {
     id: 'flux',

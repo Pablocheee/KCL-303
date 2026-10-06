@@ -2,9 +2,11 @@ import React from 'react';
 import { Sliders, Sparkles, Flame, Zap, Waves, Activity, Disc, Mic2, Music, Radio, Lock, Unlock, Power } from 'lucide-react';
 import { HybridKnob } from './HybridKnob';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 import { FilterMorphType } from '../engine/dsp_audio_engine';
 
 export const TB303FilterSection: React.FC = React.memo(() => {
+  const { t, language } = useLanguage();
   const {
     waveform,
     setWaveform,
@@ -36,7 +38,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
   // Morph display text
   const getMorphDisplay = () => {
     if (!isMorphEnabled) {
-      return 'ВЫКЛЮЧЕНО (BYPASS) • 100% DRY';
+      return language === 'ru' ? 'ВЫКЛЮЧЕНО (BYPASS) • 100% DRY' : 'BYPASS (OFF) • 100% DRY';
     }
     if (morphType === 'formant_vocal') {
       if (morphAmount < -40) return 'Vowel /O/ (400Hz)';
@@ -80,7 +82,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
           <div className="flex items-center gap-2 flex-wrap">
             <Disc className={`w-4 h-4 ${isMorphEnabled ? 'text-amber-400 animate-spin' : 'text-slate-500'}`} />
             <span className={`text-xs font-black uppercase tracking-wider ${isMorphEnabled ? 'text-amber-400' : 'text-slate-400'}`}>
-              Bipolar Macro Morph Filter
+              {t('bipolarMacro')}
             </span>
 
             {/* Morph Enable / Bypass Power Toggle Button */}
@@ -93,12 +95,12 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               }`}
               title={
                 isMorphEnabled
-                  ? 'Влияние морф-фильтра ВКЛЮЧЕНО. Нажмите, чтобы отключить (Bypass)'
-                  : 'Влияние морф-фильтра ВЫКЛЮЧЕНО (Bypass). Нажмите, чтобы включить влияние'
+                  ? t('morphTooltipActive')
+                  : t('morphTooltipBypass')
               }
             >
               <Power className={`w-3.5 h-3.5 ${isMorphEnabled ? 'text-slate-950 stroke-[3]' : 'text-slate-400'}`} />
-              <span>{isMorphEnabled ? 'МОРФ: ВКЛ (ACTIVE)' : 'МОРФ: ВЫКЛ (BYPASS)'}</span>
+              <span>{isMorphEnabled ? t('morphActive') : t('morphBypass')}</span>
             </button>
           </div>
 
@@ -113,7 +115,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
                   ? 'bg-amber-500 text-slate-950 font-black shadow'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Биполярный фильтр: влево LPF (срез верхов), вправо HPF (срез низов), в центре 0% (Flat)"
+              title={t('morphBipolarTooltip')}
             >
               <Disc className="w-3 h-3 flex-shrink-0" />
               <span className="truncate">BIPOLAR</span>
@@ -161,7 +163,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
           {/* Main Bipolar Morph Slider */}
           <div className="sm:col-span-8 space-y-1 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
             <div className="flex justify-between text-xs font-bold">
-              <span className="text-amber-300">MORPH POSITION (BIPOLAR MACRO):</span>
+              <span className="text-amber-300">{t('morphPosition')}</span>
               <span className="text-amber-400 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-800 text-[11px]">
                 {getMorphDisplay()}
               </span>
@@ -189,7 +191,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
           {/* Morph Peak Resonance Slider */}
           <div className="sm:col-span-4 space-y-1 bg-slate-950/80 p-3 rounded-lg border border-slate-800">
             <div className="flex justify-between text-xs font-bold">
-              <span className="text-cyan-300">MORPH RESONANCE:</span>
+              <span className="text-cyan-300">{t('morphResonance')}</span>
               <span className="text-cyan-400 font-bold">{morphResonance.toFixed(1)} Q</span>
             </div>
             <input
@@ -202,8 +204,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               className="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-800 rounded-lg"
             />
             <div className="flex justify-between text-[10px] text-slate-400 pt-1">
-              <span>Warm 1.0 Q</span>
-              <span className="text-cyan-400 font-bold">Screaming 24.0 Q</span>
+              <span>{t('warmQ')}</span>
+              <span className="text-cyan-400 font-bold">{t('screamingQ')}</span>
             </div>
           </div>
         </div>
@@ -214,7 +216,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
         <div className="flex items-center gap-2 min-w-0">
           <Sliders className="w-4 h-4 text-slate-700 flex-shrink-0" />
           <span className="text-xs font-black uppercase text-slate-800 tracking-wider truncate">
-            TB-303 ANALOG VCF & VCA CONTROLS
+            {t('vcfVcaControls')}
           </span>
           <span className="text-[10px] text-slate-500 hidden md:inline">
             (Cutoff CC74, Res CC71, EnvMod, Decay CC75, Accent, Drive CC94)
@@ -231,8 +233,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
           }`}
           title={
             isStaticKnobsLocked
-              ? 'Режим без дёрганий АКТИВЕН (Ручки зафиксированы). Нажмите, чтобы включить динамические микро-дёргания.'
-              : 'Режим дёрганий АКТИВЕН. Нажмите, чтобы зафиксировать ручки без дёрганий.'
+              ? t('jitterTooltipActive')
+              : t('jitterTooltipJitter')
           }
         >
           {isStaticKnobsLocked ? <Lock className="w-4 h-4 text-white" /> : <Unlock className="w-4 h-4 text-slate-600" />}
@@ -243,7 +245,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 items-start justify-items-center max-w-full">
         {/* Waveform Selector */}
         <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-slate-200/80 border border-slate-300 w-full h-[140px] space-y-2">
-          <div className="text-[10px] font-black uppercase text-slate-700">WAVEFORM</div>
+          <div className="text-[10px] font-black uppercase text-slate-700">{t('waveform')}</div>
           <div className="flex flex-col gap-1.5 w-full px-1">
             <button
               onClick={() => setWaveform('sawtooth')}
@@ -254,7 +256,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               }`}
             >
               <Waves className="w-3 h-3" />
-              <span>SAWTOOTH</span>
+              <span>{t('sawtooth')}</span>
             </button>
             <button
               onClick={() => setWaveform('square')}
@@ -265,15 +267,15 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               }`}
             >
               <Activity className="w-3 h-3" />
-              <span>SQUARE</span>
+              <span>{t('square')}</span>
             </button>
           </div>
-          <div className="text-[9px] text-slate-500">Raw VCO Diode</div>
+          <div className="text-[9px] text-slate-500">{t('rawVcoDiode')}</div>
         </div>
 
         {/* 1. Cutoff Knob */}
         <HybridKnob
-          label="CUTOFF"
+          label={t('knobCutoff')}
           subLabel="CC 74 (VCF Freq)"
           baseValue={baseCutoffCC}
           effectiveValue={isStaticKnobsLocked ? baseCutoffCC : effectiveCc.cutoff}
@@ -289,7 +291,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
 
         {/* 2. Resonance Knob (Modulated by Token Entropy) */}
         <HybridKnob
-          label="RESONANCE"
+          label={t('knobResonance')}
           subLabel="CC 71 (Entropy Q)"
           baseValue={baseResonanceCC}
           effectiveValue={isStaticKnobsLocked ? baseResonanceCC : effectiveCc.resonance}
@@ -305,7 +307,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
 
         {/* 3. Env Mod Knob */}
         <HybridKnob
-          label="ENV MOD"
+          label={t('knobEnvMod')}
           subLabel="Sweep Depth"
           baseValue={baseEnvModCC}
           effectiveValue={isStaticKnobsLocked ? baseEnvModCC : effectiveCc.envMod}
@@ -317,7 +319,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
 
         {/* 4. Decay Knob (Modulated by Thermal Noise) */}
         <HybridKnob
-          label="DECAY"
+          label={t('knobDecay')}
           subLabel="CC 75 (Thermal)"
           baseValue={baseDecayCC}
           effectiveValue={isStaticKnobsLocked ? baseDecayCC : effectiveCc.decay}
@@ -333,7 +335,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
 
         {/* 5. Accent Knob */}
         <HybridKnob
-          label="ACCENT"
+          label={t('knobAccent')}
           subLabel="Vel 127 Boost"
           baseValue={baseAccentCC}
           effectiveValue={isStaticKnobsLocked ? baseAccentCC : effectiveCc.accent}
@@ -345,7 +347,7 @@ export const TB303FilterSection: React.FC = React.memo(() => {
 
         {/* 6. Overdrive Knob (Modulated by Joule Current) */}
         <HybridKnob
-          label="OVERDRIVE"
+          label={t('knobOverdrive')}
           subLabel="CC 94 (Current)"
           baseValue={baseDriveCC}
           effectiveValue={isStaticKnobsLocked ? baseDriveCC : effectiveCc.drive}

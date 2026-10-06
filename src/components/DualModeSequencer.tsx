@@ -1,8 +1,8 @@
 /**
  * Dual Mode 32-Step Acid Sequencer (src/components/DualModeSequencer.tsx)
  * 
- * Mode 1 (Primary / Default): Roland T-8 Tactile Step & Piano Note Layout
- * Mode 2: Authentic Vintage Roland TB-303 Pitch Mode + Time Mode Programmer
+ * Mode 1 (Primary / Default): T-8 Tactile Step & Piano Note Layout
+ * Mode 2: Authentic Vintage TB-303 Pitch Mode + Time Mode Programmer
  * 
  * 100% State-Synchronized across both modes with 32-Step acid support.
  */
@@ -38,8 +38,10 @@ import {
   Activity,
   Zap,
   ChevronDown,
+  Droplets,
 } from 'lucide-react';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 import { SCALES, ScaleName, midiToNoteName, TB303StepData } from '../engine/neural_303_types';
 import { dspAudio } from '../engine/dsp_audio_engine';
 import { SavedPattern, PatternManager } from '../engine/pattern_manager';
@@ -98,6 +100,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
     setStepNote,
     updateStep,
     clearPattern,
+    shiftPatternOctave,
     generateNewPattern,
     patternList,
     activePatternId,
@@ -122,7 +125,12 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
     setPitchLfoRate,
     pitchLfoDepth,
     setPitchLfoDepth,
+    spatialRainMode,
+    setSpatialRainMode,
+    toggleSpatialRainMode,
   } = useEngine();
+
+  const { t, language } = useLanguage();
 
   // Compact Tempo-Synced Pitch LFO State & Dropdown Tabs
   const [selectedLfoDivision, setSelectedLfoDivision] = useState<LfoSyncDivision | null>('1/4');
@@ -130,11 +138,18 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
   const [isDepthMenuOpen, setIsDepthMenuOpen] = useState(false);
   const lfoContainerRef = useRef<HTMLDivElement>(null);
 
+  // Spatial Rain Dropdown Menu State
+  const [isRainMenuOpen, setIsRainMenuOpen] = useState(false);
+  const rainContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (lfoContainerRef.current && !lfoContainerRef.current.contains(e.target as Node)) {
         setIsSyncMenuOpen(false);
         setIsDepthMenuOpen(false);
+      }
+      if (rainContainerRef.current && !rainContainerRef.current.contains(e.target as Node)) {
+        setIsRainMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -147,7 +162,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
       const div = LFO_SYNC_DIVISIONS.find((d) => d.id === selectedLfoDivision);
       if (div) {
         const calculatedRate = (bpm / 60) * div.multiplier;
-        setPitchLfoRate(calculatedRate);
+        setPitchLfoRate(calculatedRate, false);
       }
     }
   }, [bpm, selectedLfoDivision, setPitchLfoRate]);
@@ -641,10 +656,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           {isSyncMenuOpen && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 top-full mt-1.5 z-50 bg-slate-950 border-2 border-emerald-500 rounded-xl p-2 shadow-2xl w-64 space-y-1 font-mono text-white text-xs pointer-events-auto"
+              className="absolute right-0 top-full mt-1.5 z-50 bg-slate-950 border-2 border-emerald-500 rounded-xl p-2 shadow-2xl w-64 max-w-[calc(100vw-36px)] space-y-1 font-mono text-white text-xs pointer-events-auto"
             >
               <div className="text-[10px] text-slate-400 font-bold px-1.5 py-1 border-b border-slate-800 uppercase flex items-center justify-between">
-                <span>Синхро к сетке шагов</span>
+                <span>{t('syncGridTitle')}</span>
                 <span className="text-emerald-400 font-bold">{bpm} BPM</span>
               </div>
               <div className="max-h-60 overflow-y-auto space-y-1 pt-1">
@@ -709,10 +724,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           {isDepthMenuOpen && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 top-full mt-1.5 z-50 bg-slate-950 border-2 border-teal-500 rounded-xl p-2.5 shadow-2xl w-60 space-y-2 font-mono text-white text-xs pointer-events-auto"
+              className="absolute right-0 top-full mt-1.5 z-50 bg-slate-950 border-2 border-teal-500 rounded-xl p-2.5 shadow-2xl w-60 max-w-[calc(100vw-36px)] space-y-2 font-mono text-white text-xs pointer-events-auto"
             >
               <div className="text-[10px] text-slate-400 font-bold px-1 py-0.5 border-b border-slate-800 uppercase flex items-center justify-between">
-                <span>Глубина переливания</span>
+                <span>{t('lfoDepthTitle')}</span>
                 <span className="text-teal-400 font-bold">±{pitchLfoDepth}c</span>
               </div>
 
@@ -732,7 +747,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     pitchLfoDepth === 150 ? 'bg-teal-600 text-white font-bold border-teal-400 shadow' : 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
                   }`}
                 >
-                  ±150c Мягко
+                  ±150c {language === 'ru' ? 'Мягко' : 'Soft'}
                 </button>
                 <button
                   type="button"
@@ -748,7 +763,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     pitchLfoDepth === 350 ? 'bg-emerald-600 text-white font-black border-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-900 text-emerald-300 border-slate-800 hover:bg-slate-800 font-bold'
                   }`}
                 >
-                  ±350c Сочно!
+                  ±350c {language === 'ru' ? 'Сочно!' : 'Juicy!'}
                 </button>
                 <button
                   type="button"
@@ -764,7 +779,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     pitchLfoDepth === 600 ? 'bg-amber-600 text-slate-950 font-black border-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-slate-900 text-amber-300 border-slate-800 hover:bg-slate-800 font-bold'
                   }`}
                 >
-                  ±600c Глубоко
+                  ±600c {language === 'ru' ? 'Глубоко' : 'Deep'}
                 </button>
                 <button
                   type="button"
@@ -780,14 +795,14 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     pitchLfoDepth === 1200 ? 'bg-red-600 text-white font-black border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-slate-900 text-rose-300 border-slate-800 hover:bg-slate-800 font-bold'
                   }`}
                 >
-                  ±1200c 1 Октава!
+                  ±1200c {language === 'ru' ? '1 Октава!' : '1 Octave!'}
                 </button>
               </div>
 
               {/* Continuous range slider up to 1200 cents (1 full octave) */}
               <div className="pt-1.5 border-t border-slate-800 space-y-1">
                 <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Слайдер:</span>
+                  <span>{t('lfoSliderLabel')}</span>
                   <span className="text-teal-300 font-bold font-mono">±{pitchLfoDepth} cents (±{(pitchLfoDepth / 100).toFixed(1)} st)</span>
                 </div>
                 <input
@@ -812,6 +827,152 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
     );
   };
 
+  /**
+   * Ultra-Compact Spatial Pan Button with Hidden Dropdown Popover Tab (3 Variations Choice)
+   */
+  const renderSpatialPanStrip = () => {
+    const isPanActive = spatialRainMode !== 'off';
+
+    const getPanShortLabel = () => {
+      if (spatialRainMode === 'pingpong') return 'P-PONG';
+      if (spatialRainMode === 'drops') return language === 'ru' ? 'КАПЛИ' : 'DROPS';
+      if (spatialRainMode === 'spiral') return language === 'ru' ? 'ВИХРЬ' : 'SPIRAL';
+      return language === 'ru' ? 'ПАН ВЫКЛ' : 'PAN OFF';
+    };
+
+    return (
+      <div ref={rainContainerRef} className="relative shrink-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsRainMenuOpen((prev) => !prev);
+            setIsSyncMenuOpen(false);
+            setIsDepthMenuOpen(false);
+          }}
+          className={`h-6 px-2 rounded-md text-[11px] font-bold transition cursor-pointer flex items-center gap-1 border shadow active:scale-95 select-none ${
+            isPanActive
+              ? 'bg-cyan-950/90 hover:bg-cyan-900 text-cyan-300 border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+              : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-700'
+          }`}
+          title={t('panTooltip')}
+        >
+          <Sliders className={`w-3 h-3 shrink-0 ${isPanActive ? 'text-cyan-400 rotate-90 animate-pulse' : 'text-slate-400 rotate-90'}`} />
+          <span className="font-mono text-[11px] tracking-tight whitespace-nowrap">{getPanShortLabel()}</span>
+          <ChevronDown className={`w-3 h-3 shrink-0 transition-transform text-slate-400 ${isRainMenuOpen ? 'rotate-180 text-cyan-300' : ''}`} />
+        </button>
+
+        {/* Hidden Dropdown Popover Tab with 3 Variations */}
+        {isRainMenuOpen && (
+          <div className="absolute right-0 top-full mt-1.5 w-64 max-w-[calc(100vw-24px)] bg-slate-950/98 backdrop-blur border border-cyan-500/80 rounded-xl p-2 shadow-[0_12px_30px_rgba(0,0,0,0.85)] z-50 space-y-1">
+            <div className="px-2 py-1 text-[10px] font-black uppercase text-cyan-400 tracking-wider flex items-center justify-between border-b border-slate-800 pb-1.5">
+              <span>{t('panTitle')}</span>
+              <span className="text-slate-400 font-normal">3 Вариации</span>
+            </div>
+
+            {/* Option 0: OFF */}
+            <button
+              type="button"
+              onClick={() => {
+                setSpatialRainMode('off');
+                setIsRainMenuOpen(false);
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                spatialRainMode === 'off'
+                  ? 'bg-slate-800 text-white font-bold border border-slate-600'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-slate-600" />
+                <span>{t('panModeOffLabel')}</span>
+              </div>
+              {spatialRainMode === 'off' && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+            </button>
+
+            {/* Option 1: Ping-Pong Mirror */}
+            <button
+              type="button"
+              onClick={() => {
+                setSpatialRainMode('pingpong');
+                setIsRainMenuOpen(false);
+                dspAudio.init();
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                spatialRainMode === 'pingpong'
+                  ? 'bg-cyan-950/90 text-cyan-300 font-black border border-cyan-500/80 shadow'
+                  : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-900'
+              }`}
+            >
+              <div>
+                <div className="font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  <span>{t('panModePingPongLabel')}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 pl-3.5 mt-0.5">
+                  {language === 'ru' ? 'Чередование лево/право с зеркальными отскоками' : 'Alternating L/R mirror ping-pong bouncing'}
+                </div>
+              </div>
+              {spatialRainMode === 'pingpong' && <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />}
+            </button>
+
+            {/* Option 2: Rain Drops Scatter */}
+            <button
+              type="button"
+              onClick={() => {
+                setSpatialRainMode('drops');
+                setIsRainMenuOpen(false);
+                dspAudio.init();
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                spatialRainMode === 'drops'
+                  ? 'bg-sky-950/90 text-sky-300 font-black border border-sky-500/80 shadow'
+                  : 'text-slate-300 hover:text-sky-300 hover:bg-slate-900'
+              }`}
+            >
+              <div>
+                <div className="font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-400" />
+                  <span>{t('panModeDropsLabel')}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 pl-3.5 mt-0.5">
+                  {language === 'ru' ? 'Разброс нот по 16 стерео точкам как капли дождя' : 'Notes flying across 16 spatial stereo rain points'}
+                </div>
+              </div>
+              {spatialRainMode === 'drops' && <Check className="w-3.5 h-3.5 text-sky-400 shrink-0" />}
+            </button>
+
+            {/* Option 3: 3D Vortex Spiral */}
+            <button
+              type="button"
+              onClick={() => {
+                setSpatialRainMode('spiral');
+                setIsRainMenuOpen(false);
+                dspAudio.init();
+              }}
+              className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-between ${
+                spatialRainMode === 'spiral'
+                  ? 'bg-indigo-950/90 text-indigo-300 font-black border border-indigo-500/80 shadow'
+                  : 'text-slate-300 hover:text-indigo-300 hover:bg-slate-900'
+              }`}
+            >
+              <div>
+                <div className="font-bold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                  <span>{t('panModeSpiralLabel')}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 pl-3.5 mt-0.5">
+                  {language === 'ru' ? 'Плавная 360° круговая орбита панорамы' : 'Continuous 360° stereo vortex orbit'}
+                </div>
+              </div>
+              {spatialRainMode === 'spiral' && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-slate-900 rounded-2xl p-3 sm:p-4 border-2 border-slate-700 space-y-3 font-mono text-white shadow-2xl max-w-full overflow-hidden box-border">
       {/* 1. Master Audio Transport & DSP Engine Bar */}
@@ -820,15 +981,21 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
         <div className="flex items-center gap-2 flex-wrap">
           {/* MASTER PLAY / STOP BUTTON */}
           <button
+            type="button"
             onClick={togglePlay}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg font-black text-xs shadow-lg transition cursor-pointer ${
+            className={`w-[130px] h-8 flex items-center justify-center gap-1.5 rounded-lg font-black text-xs shadow-lg transition cursor-pointer select-none whitespace-nowrap shrink-0 ${
               isPlaying
-                ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.7)] border border-red-400'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)] border border-emerald-400'
             }`}
+            title={isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}
           >
-            {isPlaying ? <Square className="w-4 h-4 fill-white" /> : <Play className="w-4 h-4 fill-white" />}
-            <span>{isPlaying ? 'STOP' : 'START ACID'}</span>
+            {isPlaying ? (
+              <Square className="w-3.5 h-3.5 fill-white shrink-0" />
+            ) : (
+              <Play className="w-3.5 h-3.5 fill-white shrink-0" />
+            )}
+            <span>{isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}</span>
           </button>
 
           {/* MASTER DSP POWER TOGGLE BUTTON */}
@@ -902,55 +1069,56 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
         {/* Right: Mode Switcher (T-8 vs TB-303 Classic) and Step Length (16/32) */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* Mode Switcher Buttons */}
-          <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-700 text-xs flex-shrink-0">
+          <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-700 text-xs">
             <button
               onClick={() => setViewMode('t8_trrec')}
-              className={`px-3 py-1.5 rounded font-black transition cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded font-black transition cursor-pointer flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs ${
                 viewMode === 't8_trrec'
                   ? 'bg-amber-500 text-slate-950 shadow-[0_0_12px_rgba(245,158,11,0.6)]'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Roland T-8 (Основной)</span>
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span>T-8 (TR-REC)</span>
             </button>
 
             <button
               onClick={() => setViewMode('tb303_classic')}
-              className={`px-3 py-1.5 rounded font-black transition cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded font-black transition cursor-pointer flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-xs ${
                 viewMode === 'tb303_classic'
                   ? 'bg-red-600 text-white shadow-[0_0_12px_rgba(239,68,68,0.7)]'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>Классический TB-303 (Оригинал)</span>
+              <Sliders className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">{t('viewClassic')}</span>
+              <span className="sm:hidden">TB-303</span>
             </button>
           </div>
 
           {/* Step Length Selector (16 / 32) */}
-          <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-700 text-xs flex-shrink-0">
+          <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-700 text-xs">
             <button
               onClick={() => setStepLength(16)}
-              className={`px-2.5 py-1 rounded font-black transition cursor-pointer flex items-center gap-1 ${
+              className={`px-2 sm:px-2.5 py-1 rounded font-black transition cursor-pointer flex items-center gap-1 text-[11px] sm:text-xs ${
                 totalSteps === 16
                   ? 'bg-amber-500 text-slate-950 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Переключить на 16 шагов (шаги 17-32 сохраняются в памяти)"
+              title="16 Steps"
             >
-              16 ШАГОВ
+              {t('stepLength16')}
             </button>
             <button
               onClick={() => setStepLength(32)}
-              className={`px-2.5 py-1 rounded font-black transition cursor-pointer flex items-center gap-1 ${
+              className={`px-2 sm:px-2.5 py-1 rounded font-black transition cursor-pointer flex items-center gap-1 text-[11px] sm:text-xs ${
                 totalSteps === 32
                   ? 'bg-amber-500 text-slate-950 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
                   : 'text-slate-400 hover:text-white'
               }`}
-              title="Переключить на 32 шага (показывает все 32 шага на экране)"
+              title="32 Steps"
             >
-              32 ШАГА
+              {t('stepLength32')}
             </button>
           </div>
         </div>
@@ -964,7 +1132,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           <div className="flex items-center gap-1.5 max-w-full">
             <span className="text-amber-400 font-black uppercase text-xs flex items-center gap-1">
               <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
-              <span>Пресет:</span>
+              <span>{t('presetLabel')}</span>
             </span>
             <select
               value={activePresetId || ''}
@@ -974,6 +1142,18 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               }}
               className="bg-slate-950 border border-slate-700 text-white font-bold px-2 py-1 rounded focus:outline-none cursor-pointer max-w-[200px] sm:max-w-xs truncate text-xs"
             >
+              {presets.some((p) => p.category === 'Tekno') && (
+                <optgroup label="🔊 Tekno / Acidcore (162-168 BPM)" className="bg-slate-950 text-purple-400">
+                  {presets
+                    .filter((p) => p.category === 'Tekno')
+                    .map((preset) => (
+                      <option key={preset.id} value={preset.id} className="bg-slate-900 text-white">
+                        [{preset.bpm} BPM] {preset.name}
+                      </option>
+                    ))}
+                </optgroup>
+              )}
+
               {presets.some((p) => p.category === 'Acid') && (
                 <optgroup label="⚡ Acid Patterns (138-144 BPM)" className="bg-slate-950 text-amber-400">
                   {presets
@@ -990,18 +1170,6 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                 <optgroup label="🔥 Tribcore (180-190 BPM)" className="bg-slate-950 text-rose-400">
                   {presets
                     .filter((p) => p.category === 'Tribcore')
-                    .map((preset) => (
-                      <option key={preset.id} value={preset.id} className="bg-slate-900 text-white">
-                        [{preset.bpm} BPM] {preset.name}
-                      </option>
-                    ))}
-                </optgroup>
-              )}
-
-              {presets.some((p) => p.category === 'Tekno') && (
-                <optgroup label="🔊 Tekno / Acidcore (162-168 BPM)" className="bg-slate-950 text-purple-400">
-                  {presets
-                    .filter((p) => p.category === 'Tekno')
                     .map((preset) => (
                       <option key={preset.id} value={preset.id} className="bg-slate-900 text-white">
                         [{preset.bpm} BPM] {preset.name}
@@ -1046,10 +1214,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               setIsSaveModalOpen(true);
             }}
             className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition cursor-pointer flex items-center gap-1 shadow text-xs"
-            title="Сохранить текущий паттерн в память (localStorage)"
+            title="Save pattern (localStorage)"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>Сохранить</span>
+            <span>{t('saveBtn')}</span>
           </button>
 
           {/* Delete User Pattern */}
@@ -1057,10 +1225,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
             <button
               onClick={() => handleDelete(currentPatternObj.id, currentPatternObj.name)}
               className="px-2 py-1 rounded bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-700 font-bold transition cursor-pointer flex items-center gap-1 text-xs"
-              title="Удалить пользовательский паттерн"
+              title="Delete user pattern"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Удалить</span>
+              <span>{t('deleteBtn')}</span>
             </button>
           )}
 
@@ -1068,19 +1236,19 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           <button
             onClick={handleExportJson}
             className="px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 transition cursor-pointer flex items-center gap-1 text-[11px]"
-            title="Экспортировать банк паттернов в .json"
+            title="Export patterns to .json"
           >
             <Download className="w-3 h-3" />
-            <span className="hidden sm:inline">Экспорт</span>
+            <span className="hidden sm:inline">{t('exportBtn')}</span>
           </button>
 
           {/* Import JSON */}
           <label
             className="px-2 py-1 rounded bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-700 transition cursor-pointer flex items-center gap-1 text-[11px]"
-            title="Импортировать паттерны из .json"
+            title="Import patterns from .json"
           >
             <Upload className="w-3 h-3" />
-            <span className="hidden sm:inline">Импорт</span>
+            <span className="hidden sm:inline">{t('importBtn')}</span>
             <input type="file" accept=".json" onChange={handleImportJson} className="hidden" />
           </label>
 
@@ -1088,11 +1256,11 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           {onOpenWavModal && (
             <button
               onClick={onOpenWavModal}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-xs border border-rose-400 transition cursor-pointer shadow-[0_0_12px_rgba(225,29,72,0.5)] ml-1"
-              title="WAV Экспорт: живая запись сессии до 10 минут с отсчетом или быстрый OfflineAudioContext рендер"
+              className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-xs border border-rose-400 transition cursor-pointer shadow-[0_0_12px_rgba(225,29,72,0.5)] w-full sm:w-auto mt-1 sm:mt-0"
+              title="WAV Export"
             >
-              <Disc className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} />
-              <span>WAV ЭКСПОРТ / ЗАПИСЬ</span>
+              <Disc className="w-3.5 h-3.5 animate-spin shrink-0" style={{ animationDuration: '4s' }} />
+              <span>{t('wavExportBtn')}</span>
             </button>
           )}
         </div>
@@ -1205,7 +1373,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
         <div className="flex items-center gap-1.5 flex-wrap">
           {viewMode === 't8_trrec' && (
             <div className="flex items-center gap-1 mr-1">
-              <span className="text-[10px] text-slate-400 font-bold hidden md:inline">Октава клавиш:</span>
+              <span className="text-[10px] text-slate-400 font-bold hidden md:inline">{t('octaveKeys')}</span>
               <div className="flex bg-slate-900 p-0.5 rounded border border-slate-700 text-[10px]">
                 <button
                   onClick={() => setBaseOctave(36)}
@@ -1238,7 +1406,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           <button
             onClick={generateNewPattern}
             className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold border border-slate-700 transition cursor-pointer flex items-center gap-1 shadow text-xs"
-            title="Сгенерировать случайный acid-паттерн (Rndm)"
+            title="Randomize pattern (Rndm)"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Rndm</span>
@@ -1247,30 +1415,32 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           <button
             onClick={clearPattern}
             className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-rose-400 border border-slate-800 transition cursor-pointer flex items-center gap-1 text-xs"
-            title="Очистить все ноты паттерна"
+            title={t('clearConfirmTitle')}
           >
             <Trash2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Очистить</span>
+            <span className="hidden sm:inline">{t('clearBtn')}</span>
           </button>
 
-          {/* COMPACT BASS PITCH LFO STRIP ON THE RIGHT */}
-          <div className="ml-1 pl-1.5 border-l border-slate-800 flex items-center shrink-0">
+          {/* COMPACT BASS PITCH LFO & SPATIAL PAN STRIPS ON THE RIGHT */}
+          <div className="ml-1 pl-1.5 border-l border-slate-800 flex items-center gap-1.5 flex-wrap">
             {renderCompactPitchLfoStrip()}
+            {renderSpatialPanStrip()}
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* MODE 1 (DEFAULT / PRIMARY): ROLAND T-8 TACTILE STEP SEQUENCER             */}
+      {/* MODE 1 (DEFAULT / PRIMARY): T-8 TACTILE STEP SEQUENCER                    */}
       {/* ========================================================================= */}
       {viewMode === 't8_trrec' && (
         <div className="space-y-3.5 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 max-w-full overflow-hidden box-border">
-          {/* Section Header & Selected Step HUD (Fixed height, absolute zero layout shift!) */}
-          <div className="flex items-center justify-between gap-2 text-xs border-b border-slate-800 pb-2 h-9 box-border">
-            <div className="flex items-center gap-2 min-w-0">
+          {/* Section Header & Selected Step HUD (Responsive, zero overflow on mobile) */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 text-xs border-b border-slate-800 pb-2 min-h-9 box-border">
+            <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-amber-400 font-bold flex items-center gap-1.5 whitespace-nowrap">
                 <Layers className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Roland T-8 Tactile Step Sequencer ({totalSteps} шагов)</span>
+                <span className="hidden sm:inline">T-8 Tactile Step Sequencer ({totalSteps} шагов)</span>
+                <span className="sm:hidden">T-8 ({totalSteps}ш)</span>
               </span>
               <span className="text-[10px] text-slate-500 hidden md:inline truncate">
                 {totalSteps === 32 ? 'Визуально отображены все 32 шага (Такт 1 и Такт 2)' : 'Отображены 16 шагов (Такт 1)'}
@@ -1280,14 +1450,14 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
             {/* Selected Step Inspector Pill - 100% Fixed Dimensions, Zero Layout Shift */}
             {currentStepData && (
               <div
-                className={`h-7 px-2 rounded-lg border text-xs flex items-center gap-1.5 shrink-0 whitespace-nowrap transition-colors bg-slate-900 ${
+                className={`h-7 px-1.5 sm:px-2 rounded-lg border text-xs flex items-center gap-1 sm:gap-1.5 shrink-0 whitespace-nowrap transition-colors bg-slate-900 ${
                   isShiftPressed
                     ? 'border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.6)] ring-1 ring-amber-400'
                     : 'border-slate-700'
                 }`}
               >
-                <span className="text-slate-400 text-[11px]">Шаг:</span>
-                <span className="text-amber-400 font-black text-xs font-mono w-7 text-left">
+                <span className="text-slate-400 text-[10px] sm:text-[11px]">Шаг:</span>
+                <span className="text-amber-400 font-black text-xs font-mono w-6 sm:w-7 text-left">
                   #{selectedStepIdx + 1}
                 </span>
                 {/* Step Note - Click to Audition */}
@@ -1297,7 +1467,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     auditionStep(currentStepData.note, currentStepData.accent, currentStepData.slide);
                     e.currentTarget.blur();
                   }}
-                  className={`font-mono font-bold text-xs w-11 text-center transition cursor-pointer select-none hover:scale-105 active:scale-95 ${
+                  className={`font-mono font-bold text-xs w-9 sm:w-11 text-center transition cursor-pointer select-none hover:scale-105 active:scale-95 ${
                     isShiftPressed ? 'text-amber-300 font-black animate-pulse' : 'text-emerald-400 hover:text-emerald-300'
                   }`}
                   title={`Прослушать ноту шага #${selectedStepIdx + 1} (${currentStepData.noteName})`}
@@ -1315,7 +1485,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     }
                     e.currentTarget.blur();
                   }}
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-center w-14 transition cursor-pointer select-none active:scale-95 ${
+                  className={`text-[9px] font-bold px-1 sm:px-1.5 py-0.5 rounded text-center w-12 sm:w-14 transition cursor-pointer select-none active:scale-95 ${
                     currentStepData.gate
                       ? 'bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 hover:text-white'
@@ -1335,7 +1505,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     }
                     e.currentTarget.blur();
                   }}
-                  className={`text-[9px] font-bold px-1 py-0.5 rounded text-center w-8 transition cursor-pointer select-none active:scale-95 ${
+                  className={`text-[9px] font-bold px-1 py-0.5 rounded text-center w-7 sm:w-8 transition cursor-pointer select-none active:scale-95 ${
                     currentStepData.accent
                       ? 'text-red-300 bg-red-950/80 border border-red-600 shadow-[0_0_8px_rgba(239,68,68,0.4)] hover:bg-red-900'
                       : 'text-slate-600 border border-slate-800/60 bg-slate-950/40 hover:border-red-800/80 hover:text-red-400 opacity-60 hover:opacity-100'
@@ -1352,7 +1522,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     toggleSlide(selectedStepIdx);
                     e.currentTarget.blur();
                   }}
-                  className={`text-[9px] font-bold px-1 py-0.5 rounded text-center w-10 transition cursor-pointer select-none active:scale-95 ${
+                  className={`text-[9px] font-bold px-1 py-0.5 rounded text-center w-9 sm:w-10 transition cursor-pointer select-none active:scale-95 ${
                     currentStepData.slide
                       ? 'text-cyan-300 bg-cyan-950/80 border border-cyan-600 shadow-[0_0_8px_rgba(6,182,212,0.4)] hover:bg-cyan-900'
                       : 'text-slate-600 border border-slate-800/60 bg-slate-950/40 hover:border-cyan-800/80 hover:text-cyan-400 opacity-60 hover:opacity-100'
@@ -1365,20 +1535,20 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
             )}
           </div>
 
-          {/* Sub-line: Keyboard Hotkeys Guide & Live Status (Fixed 24px height, zero DOM shift) */}
-          <div className="flex items-center justify-between text-[10px] text-slate-400 px-0.5 h-6 select-none border-b border-slate-900 pb-1">
-            <div className="flex items-center gap-1.5 flex-wrap overflow-hidden">
-              <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">Клавиши:</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-300 font-mono">← / →</kbd> Шаг</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-300 font-mono">↑ / ↓</kbd> Дорожка</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300 font-mono">Enter</kbd> Вкл/Удалить</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-400 font-mono">Shift+↑/↓</kbd> Нота</span>
-              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-emerald-400 font-mono">Пробел</kbd> Play</span>
+          {/* Sub-line: Keyboard Hotkeys Guide & Live Status */}
+          <div className="flex flex-wrap items-center justify-between text-[10px] text-slate-400 px-0.5 min-h-6 select-none border-b border-slate-900 pb-1 gap-1">
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap overflow-hidden">
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-[9px]">{t('hotkeysGuide')}</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-300 font-mono">← / →</kbd> {t('hotkeysStep')}</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-300 font-mono">↑ / ↓</kbd> {t('hotkeysRow')}</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-cyan-300 font-mono">Enter</kbd> {t('hotkeysToggle')}</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-amber-400 font-mono">Shift+↑/↓</kbd> {t('hotkeysNote')}</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-slate-900 border border-slate-800 text-emerald-400 font-mono">Space</kbd> {t('hotkeysPlay')}</span>
             </div>
 
             {isShiftPressed && (
               <span className="text-amber-400 font-bold text-[10px] animate-pulse whitespace-nowrap hidden sm:inline">
-                ⚡ SHIFT АКТИВЕН: клавиши ↑ / ↓ меняют ноту [{currentStepData?.noteName}]
+                ⚡ SHIFT ACTIVE: keys ↑ / ↓ change note [{currentStepData?.noteName}]
               </span>
             )}
           </div>
@@ -1390,10 +1560,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold px-1 h-5 select-none">
                 <span className="flex items-center gap-1.5 text-amber-400">
                   <span className={`w-2 h-2 rounded-full transition-colors ${isPlaying && currentStep < 16 ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse' : 'bg-amber-500/40'}`} />
-                  <span>ТАКТ 1 (ШАГИ 1–16)</span>
+                  <span>{t('bar1Label')}</span>
                 </span>
                 <span className={`text-[10px] font-bold transition-opacity ${isPlaying && currentStep < 16 ? 'text-emerald-400 opacity-100' : 'opacity-0'}`}>
-                  ● ТАКТ 1 ЗВУЧИТ
+                  {t('bar1Playing')}
                 </span>
               </div>
               <div className="grid grid-cols-8 sm:grid-cols-16 gap-1.5 max-w-full">
@@ -1407,10 +1577,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                 <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold px-1 h-5 select-none">
                   <span className="flex items-center gap-1.5 text-indigo-400">
                     <span className={`w-2 h-2 rounded-full transition-colors ${isPlaying && currentStep >= 16 ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse' : 'bg-indigo-500/40'}`} />
-                    <span>ТАКТ 2 (ШАГИ 17–32)</span>
+                    <span>{t('bar2Label')}</span>
                   </span>
                   <span className={`text-[10px] font-bold transition-opacity ${isPlaying && currentStep >= 16 ? 'text-emerald-400 opacity-100' : 'opacity-0'}`}>
-                    ● ТАКТ 2 ЗВУЧИТ
+                    {t('bar2Playing')}
                   </span>
                 </div>
                 <div className="grid grid-cols-8 sm:grid-cols-16 gap-1.5 max-w-full">
@@ -1422,10 +1592,12 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
 
           {/* Direct Note Shifter & Modifiers Strip for Selected Step */}
           {currentStepData && (
-            <div className="flex flex-wrap items-center justify-between gap-2.5 p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs max-w-full overflow-hidden box-border">
               {/* Note Selector & Pitch Adjuster */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-slate-400 text-[11px] font-bold">Нота шага #{selectedStepIdx + 1}:</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap max-w-full">
+                <span className="text-slate-400 text-[10px] sm:text-[11px] font-bold whitespace-nowrap">
+                  <span className="hidden sm:inline">{t('stepNoteLabel')}</span> #{selectedStepIdx + 1}:
+                </span>
 
                 {/* Direct Note Pitch Selector Dropdown */}
                 <select
@@ -1435,24 +1607,24 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     setStepNote(selectedStepIdx, midi);
                     auditionStep(midi, currentStepData.accent, currentStepData.slide);
                   }}
-                  className="bg-slate-950 border border-slate-700 text-amber-300 font-bold px-2 py-1 rounded text-xs focus:outline-none cursor-pointer"
+                  className="bg-slate-950 border border-slate-700 text-amber-300 font-bold px-1.5 sm:px-2 py-1 rounded text-xs focus:outline-none cursor-pointer max-w-[110px] sm:max-w-none truncate"
                 >
                   {Array.from({ length: 48 }, (_, i) => 24 + i).map((midi) => (
                     <option key={midi} value={midi} className="bg-slate-900 text-white">
-                      {midiToNoteName(midi)} (MIDI {midi})
+                      {midiToNoteName(midi)} ({midi})
                     </option>
                   ))}
                 </select>
 
                 {/* Semitone - / + Buttons */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 sm:gap-1">
                   <button
                     onClick={() => {
                       const newNote = Math.max(24, currentStepData.note - 1);
                       setStepNote(selectedStepIdx, newNote);
                       auditionStep(newNote, currentStepData.accent, currentStepData.slide);
                     }}
-                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs cursor-pointer"
+                    className="px-1.5 sm:px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] sm:text-xs cursor-pointer active:scale-95"
                     title="-1 Полутон"
                   >
                     -1 Semi
@@ -1463,23 +1635,23 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                       setStepNote(selectedStepIdx, newNote);
                       auditionStep(newNote, currentStepData.accent, currentStepData.slide);
                     }}
-                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs cursor-pointer"
+                    className="px-1.5 sm:px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] sm:text-xs cursor-pointer active:scale-95"
                     title="+1 Полутон"
                   >
                     +1 Semi
                   </button>
                 </div>
 
-                {/* Octave - / + Buttons */}
-                <div className="flex items-center gap-1">
+                {/* Step Octave - / + Buttons */}
+                <div className="flex items-center gap-0.5 sm:gap-1">
                   <button
                     onClick={() => {
                       const newNote = Math.max(24, currentStepData.note - 12);
                       setStepNote(selectedStepIdx, newNote);
                       auditionStep(newNote, currentStepData.accent, currentStepData.slide);
                     }}
-                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs cursor-pointer"
-                    title="-1 Октава"
+                    className="px-1.5 sm:px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] sm:text-xs cursor-pointer active:scale-95"
+                    title={language === 'ru' ? 'Сдвинуть выбранный шаг на 1 октаву вниз' : 'Shift selected step 1 octave down'}
                   >
                     -1 Oct
                   </button>
@@ -1489,61 +1661,80 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                       setStepNote(selectedStepIdx, newNote);
                       auditionStep(newNote, currentStepData.accent, currentStepData.slide);
                     }}
-                    className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs cursor-pointer"
-                    title="+1 Октава"
+                    className="px-1.5 sm:px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] sm:text-xs cursor-pointer active:scale-95"
+                    title={language === 'ru' ? 'Сдвинуть выбранный шаг на 1 октаву вверх' : 'Shift selected step 1 octave up'}
                   >
                     +1 Oct
                   </button>
                 </div>
 
+                {/* Entire Pattern Octave Shift Buttons */}
+                <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-slate-700">
+                  <button
+                    onClick={() => shiftPatternOctave(-1)}
+                    className="px-1.5 sm:px-2 py-1 rounded bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-600/80 font-bold text-[10px] sm:text-xs cursor-pointer shadow-sm transition active:scale-95 whitespace-nowrap"
+                    title={language === 'ru' ? 'Сдвинуть ВСЕ ноты паттерна на 1 октаву вниз (-12 полутонов)' : 'Shift ALL pattern steps 1 octave down (-12 semitones)'}
+                  >
+                    {language === 'ru' ? 'ВСЕ -1 ОКТ' : 'ALL -1 OCT'}
+                  </button>
+                  <button
+                    onClick={() => shiftPatternOctave(+1)}
+                    className="px-1.5 sm:px-2 py-1 rounded bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-600/80 font-bold text-[10px] sm:text-xs cursor-pointer shadow-sm transition active:scale-95 whitespace-nowrap"
+                    title={language === 'ru' ? 'Сдвинуть ВСЕ ноты паттерна на 1 октаву вверх (+12 полутонов)' : 'Shift ALL pattern steps 1 octave up (+12 semitones)'}
+                  >
+                    {language === 'ru' ? 'ВСЕ +1 ОКТ' : 'ALL +1 OCT'}
+                  </button>
+                </div>
+
+                {/* Step Test Sound Button */}
                 <button
                   onClick={() => auditionStep(currentStepData.note, currentStepData.accent, currentStepData.slide)}
-                  className="px-2 py-1 rounded bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-xs cursor-pointer flex items-center gap-1 shadow"
-                  title="Прослушать ноту"
+                  className="px-2 py-1 rounded bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-[11px] sm:text-xs cursor-pointer flex items-center gap-1 shadow active:scale-95 shrink-0"
+                  title={language === 'ru' ? 'Прослушать ноту' : 'Audition note'}
                 >
                   <Volume2 className="w-3.5 h-3.5" />
-                  <span>Тест</span>
+                  <span>{language === 'ru' ? 'Тест' : 'Test'}</span>
                 </button>
               </div>
 
               {/* Action Modifiers */}
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap max-w-full">
                 <button
                   onClick={() => toggleGate(selectedStepIdx)}
-                  className={`px-2.5 py-1 rounded font-bold transition cursor-pointer border text-xs ${
+                  className={`px-2 sm:px-2.5 py-1 rounded font-bold transition cursor-pointer border text-[11px] sm:text-xs active:scale-95 ${
                     currentStepData.gate
                       ? 'bg-emerald-600 text-white border-emerald-400 shadow'
                       : 'bg-slate-800 text-slate-400 border-slate-700'
                   }`}
                 >
-                  {currentStepData.gate ? '● TRIG ON' : '○ REST'}
+                  {currentStepData.gate ? '● TRIG' : '○ REST'}
                 </button>
 
                 <button
                   onClick={() => toggleAccent(selectedStepIdx)}
-                  className={`px-2.5 py-1 rounded font-bold transition cursor-pointer border text-xs ${
+                  className={`px-2 sm:px-2.5 py-1 rounded font-bold transition cursor-pointer border text-[11px] sm:text-xs active:scale-95 ${
                     currentStepData.accent
                       ? 'bg-red-600 text-white border-red-400 shadow-[0_0_8px_rgba(239,68,68,0.7)]'
                       : 'bg-slate-800 text-slate-400 border-slate-700'
                   }`}
                 >
-                  ACCENT (A)
+                  ACC
                 </button>
 
                 <button
                   onClick={() => toggleSlide(selectedStepIdx)}
-                  className={`px-2.5 py-1 rounded font-bold transition cursor-pointer border text-xs ${
+                  className={`px-2 sm:px-2.5 py-1 rounded font-bold transition cursor-pointer border text-[11px] sm:text-xs active:scale-95 ${
                     currentStepData.slide
                       ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.7)]'
                       : 'bg-slate-800 text-slate-400 border-slate-700'
                   }`}
                 >
-                  SLIDE (S)
+                  SLIDE
                 </button>
 
                 <button
                   onClick={() => toggleOctave(selectedStepIdx)}
-                  className={`px-2.5 py-1 rounded font-bold transition cursor-pointer border text-xs ${
+                  className={`px-2 sm:px-2.5 py-1 rounded font-bold transition cursor-pointer border text-[11px] sm:text-xs active:scale-95 ${
                     currentStepData.octaveUp
                       ? 'bg-amber-400 text-slate-950 border-amber-300 shadow'
                       : 'bg-slate-800 text-slate-400 border-slate-700'
@@ -1553,26 +1744,26 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                 </button>
 
                 {/* Step Navigation */}
-                <div className="flex items-center gap-1 ml-1">
+                <div className="flex items-center gap-0.5 sm:gap-1 ml-0.5">
                   <button
                     onClick={() => {
                       const prev = (selectedStepIdx - 1 + totalSteps) % totalSteps;
                       setSelectedStepIdx(prev);
                     }}
-                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer active:scale-95"
                     title="Предыдущий шаг"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                   <button
                     onClick={() => {
                       const next = (selectedStepIdx + 1) % totalSteps;
                       setSelectedStepIdx(next);
                     }}
-                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer active:scale-95"
                     title="Следующий шаг"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                 </div>
               </div>
@@ -1582,7 +1773,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
       )}
 
       {/* ========================================================================= */}
-      {/* MODE 2: AUTHENTIC VINTAGE ROLAND TB-303 PROGRAMMER (PITCH & TIME MODES)   */}
+      {/* MODE 2: AUTHENTIC VINTAGE TB-303 PROGRAMMER (PITCH & TIME MODES)          */}
       {/* ========================================================================= */}
       {viewMode === 'tb303_classic' && (
         <div className="space-y-4 bg-gradient-to-b from-slate-900 to-slate-950 p-4 rounded-xl border-2 border-slate-600 shadow-2xl text-slate-100 max-w-full overflow-hidden box-border">
@@ -1594,10 +1785,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               </div>
               <div className="space-y-0.5">
                 <div className="text-[11px] font-black text-amber-400 tracking-wider uppercase">
-                  ORIGINAL STEP PROGRAMMER (PITCH & TIME MODES)
+                  {t('classic303Header')}
                 </div>
                 <div className="text-[10px] text-slate-400">
-                  Классический пошаговый ввод нот и ритма как в оригинале 1982 года
+                  {t('classic303Desc')}
                 </div>
               </div>
             </div>
@@ -1634,7 +1825,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               }`}
             >
               <Music className="w-3.5 h-3.5" />
-              <span>1. PITCH MODE (ВВОД ВЫСОТЫ НОТ)</span>
+              <span>{t('pitchModeTitle')}</span>
             </button>
 
             <button
@@ -1646,7 +1837,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
-              <span>2. TIME MODE (РИТМИЧЕСКИЙ ВВОД: NOTE/TIE/REST)</span>
+              <span>{t('timeModeTitle')}</span>
             </button>
           </div>
 
@@ -1655,7 +1846,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
             <div className="space-y-3 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800">
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-amber-400 font-bold">
-                  Шаг #{selectedStepIdx + 1} &mdash; Нажмите клавишу ноты для записи и перехода к следующему шагу:
+                  {t('stepRecordPrompt').replace('{step}', String(selectedStepIdx + 1))}
                 </span>
 
                 {/* Transpose Octave Buttons */}
@@ -1665,19 +1856,19 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     onClick={() => setBaseOctave(24)}
                     className={`px-2 py-0.5 rounded font-bold cursor-pointer ${baseOctave === 24 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}
                   >
-                    DOWN
+                    {t('transposeDown')}
                   </button>
                   <button
                     onClick={() => setBaseOctave(36)}
                     className={`px-2 py-0.5 rounded font-bold cursor-pointer ${baseOctave === 36 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}
                   >
-                    NORM
+                    {t('transposeNorm')}
                   </button>
                   <button
                     onClick={() => setBaseOctave(48)}
                     className={`px-2 py-0.5 rounded font-bold cursor-pointer ${baseOctave === 48 ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}
                   >
-                    UP
+                    {t('transposeUp')}
                   </button>
                 </div>
               </div>
@@ -1733,13 +1924,13 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     onClick={() => setSelectedStepIdx((prev) => (prev - 1 + totalSteps) % totalSteps)}
                     className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer"
                   >
-                    ◄ Назад
+                    {t('backBtn')}
                   </button>
                   <button
                     onClick={() => setSelectedStepIdx((prev) => (prev + 1) % totalSteps)}
                     className="px-3 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer shadow"
                   >
-                    Вперед ►
+                    {t('forwardBtn')}
                   </button>
                 </div>
               </div>
@@ -1750,18 +1941,18 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           {tb303ProgramSubMode === 'time' && (
             <div className="space-y-4 bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800">
               <div className="text-xs text-slate-300">
-                Ритмический ввод шага <b>#{selectedStepIdx + 1}</b> (нажатие кнопки автоматически продвигает шаг вперед):
+                {t('rhythmRecordPrompt').replace('{step}', String(selectedStepIdx + 1))}
               </div>
 
-              {/* 3 Main Roland TB-303 Rhythm Input Buttons */}
+              {/* 3 Main TB-303 Rhythm Input Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <button
                   onClick={() => handleTimeInput('note')}
                   className="p-4 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-black text-sm shadow-[0_0_12px_rgba(16,185,129,0.5)] border border-emerald-400 transition cursor-pointer flex flex-col items-center justify-center gap-1.5"
                 >
                   <Music className="w-5 h-5" />
-                  <span>🎵 NOTE (16TH TRIG)</span>
-                  <span className="text-[10px] font-normal text-emerald-200">Звучание ноты на этом шаге</span>
+                  <span>{t('rhythmNoteBtn')}</span>
+                  <span className="text-[10px] font-normal text-emerald-200">{t('rhythmNoteDesc')}</span>
                 </button>
 
                 <button
@@ -1769,8 +1960,8 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                   className="p-4 rounded-xl bg-cyan-700 hover:bg-cyan-600 text-white font-black text-sm shadow-[0_0_12px_rgba(6,182,212,0.5)] border border-cyan-400 transition cursor-pointer flex flex-col items-center justify-center gap-1.5"
                 >
                   <Layers className="w-5 h-5" />
-                  <span>🔗 TIE (LEGATO HOLD)</span>
-                  <span className="text-[10px] font-normal text-cyan-200">Тянуть предыдущую ноту</span>
+                  <span>{t('rhythmTieBtn')}</span>
+                  <span className="text-[10px] font-normal text-cyan-200">{t('rhythmTieDesc')}</span>
                 </button>
 
                 <button
@@ -1778,8 +1969,8 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                   className="p-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-sm border border-slate-600 transition cursor-pointer flex flex-col items-center justify-center gap-1.5"
                 >
                   <Square className="w-5 h-5" />
-                  <span>⏸️ REST (ПАУЗА)</span>
-                  <span className="text-[10px] font-normal text-slate-400">Тишина на этом шаге</span>
+                  <span>{t('rhythmRestBtn')}</span>
+                  <span className="text-[10px] font-normal text-slate-400">{t('rhythmRestDesc')}</span>
                 </button>
               </div>
 
@@ -1789,13 +1980,13 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                   onClick={() => setSelectedStepIdx((prev) => (prev - 1 + totalSteps) % totalSteps)}
                   className="px-3 py-1 rounded bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
                 >
-                  ◄ Назад
+                  {t('backBtn')}
                 </button>
                 <button
                   onClick={() => setSelectedStepIdx((prev) => (prev + 1) % totalSteps)}
                   className="px-3 py-1 rounded bg-slate-800 text-slate-300 text-xs font-bold cursor-pointer"
                 >
-                  Вперед ►
+                  {t('forwardBtn')}
                 </button>
               </div>
             </div>
@@ -1804,7 +1995,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           {/* 32-Step Visual LED Strip */}
           <div className="space-y-1 bg-slate-950 p-2.5 rounded-lg border border-slate-800">
             <div className="text-[10px] text-slate-400 font-bold uppercase">
-              Общая шкала 32 шагов (Кликните для выбора):
+              {t('fullScale32')}
             </div>
             <div className="grid grid-cols-16 sm:grid-cols-32 gap-1">
               {pattern.slice(0, totalSteps).map((s, idx) => {
@@ -1824,7 +2015,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     className={`h-7 rounded text-[8px] flex items-center justify-center transition cursor-pointer ${bg} ${
                       isSelected ? 'ring-2 ring-cyan-400' : ''
                     }`}
-                    title={`Шаг ${idx + 1}: ${s.gate ? s.noteName : 'REST'}`}
+                    title={`Step ${idx + 1}: ${s.gate ? s.noteName : 'REST'}`}
                   >
                     {idx + 1}
                   </button>
@@ -1852,7 +2043,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <span className="text-sm font-black uppercase text-amber-400 flex items-center gap-2">
                 <Save className="w-4 h-4" />
-                <span>Сохранить паттерн в память</span>
+                <span>{t('savePatternTitle')}</span>
               </span>
               <button
                 type="button"
@@ -1865,7 +2056,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1 font-bold">Название паттерна:</label>
+                <label className="block text-slate-400 mb-1 font-bold">{t('patternNameLabel')}</label>
                 <input
                   type="text"
                   required
@@ -1877,7 +2068,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1 font-bold">Категория / Стиль:</label>
+                <label className="block text-slate-400 mb-1 font-bold">{t('patternCategoryLabel')}</label>
                 <input
                   type="text"
                   value={newPatternCategory}
@@ -1888,7 +2079,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               </div>
 
               <div className="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded border border-slate-800">
-                Сохранится вся {totalSteps}-шаговая последовательность нот, акцентов, слайдов, темп ({bpm} BPM) и лад ({SCALES[scale]?.name}). Паттерн не сотрется при переходе между вкладками или перезагрузке страницы!
+                {t('patternSaveInfo')}
               </div>
             </div>
 
@@ -1898,14 +2089,14 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                 onClick={() => setIsSaveModalOpen(false)}
                 className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer font-bold text-xs"
               >
-                Отмена
+                {t('cancelBtn')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-black cursor-pointer shadow text-xs flex items-center gap-1.5"
               >
                 <Save className="w-3.5 h-3.5" />
-                <span>Сохранить</span>
+                <span>{t('saveBtn')}</span>
               </button>
             </div>
           </form>

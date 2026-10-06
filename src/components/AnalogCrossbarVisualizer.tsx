@@ -7,23 +7,24 @@ import {
   RefreshCw,
   ArrowRight,
   Radio,
+  Touchpad as TouchIcon,
 } from 'lucide-react';
 import {
   mapWeightsToConductance,
   AnalogCrossbarTelemetry,
 } from '../engine/analog_crossbar';
 import { useEngine } from '../context/EngineContext';
+import { useLanguage } from '../i18n/translations';
 
 export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
+  const { t } = useLanguage();
   const {
     specs,
-    setSpecs,
     updateSpecField,
     midiDevices,
     selectedMidiId,
     selectMidiPort,
     isMidiSupported,
-    midiStatusText,
   } = useEngine();
 
   const [hoveredCell, setHoveredCell] = useState<{ row: number; col: number } | null>(null);
@@ -130,32 +131,36 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
   };
 
   return (
-    <div className="w-full space-y-6">
-      <div className="bg-[#0a0f18] rounded-xl border border-slate-800 p-4 lg:p-6 shadow-xl space-y-5">
+    <div className="w-full space-y-4 sm:space-y-6">
+      {/* Main Container Card */}
+      <div className="bg-[#0a0f18] rounded-xl border border-slate-800 p-3 sm:p-5 lg:p-6 shadow-xl space-y-4 sm:space-y-5">
+        
+        {/* Top Header & Hardware Mode Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-amber-950/80 border border-amber-700/60 text-amber-400">
-              <Zap className="w-5 h-5" />
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="p-2 rounded-lg bg-amber-950/80 border border-amber-700/60 text-amber-400 shrink-0">
+              <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                Live Analog Crossbar Array (Physical Hardware Engine)
+              <h2 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5 leading-snug">
+                <span>{t('analogTitle')}</span>
               </h2>
-              <p className="text-xs text-slate-400">
-                Direct Mathematical Binding: Ohm's Law (I = V × G) & Kirchhoff's Current Law (∑ I)
+              <p className="text-[10px] sm:text-xs text-slate-400 leading-tight">
+                {t('analogSubtitle')}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono">
-              <Radio className={`w-3.5 h-3.5 ${isMidiSupported ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
-              <span className="text-slate-400">MIDI Out:</span>
+          {/* MIDI Out & Reprogram Hardware Toolbar */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono flex-1 sm:flex-initial min-w-0">
+              <Radio className={`w-3.5 h-3.5 shrink-0 ${isMidiSupported ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
+              <span className="text-slate-400 shrink-0">{t('analogMidiOut')}:</span>
               {midiDevices.length > 0 ? (
                 <select
                   value={selectedMidiId}
                   onChange={(e) => selectMidiPort(e.target.value)}
-                  className="bg-transparent text-emerald-300 font-bold focus:outline-none cursor-pointer"
+                  className="bg-transparent text-emerald-300 font-bold focus:outline-none cursor-pointer truncate max-w-[140px] sm:max-w-xs text-xs"
                 >
                   {midiDevices.map((dev) => (
                     <option key={dev.id} value={dev.id} className="bg-slate-900 text-white">
@@ -164,27 +169,29 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
                   ))}
                 </select>
               ) : (
-                <span className="text-amber-400">No Web MIDI Devices</span>
+                <span className="text-amber-400 truncate text-[11px] sm:text-xs">{t('analogNoMidi')}</span>
               )}
             </div>
 
             <button
               onClick={reprogramMemristors}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-mono transition cursor-pointer"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 border border-slate-700 text-xs font-mono transition cursor-pointer shrink-0 select-none"
+              title="Generate new random conductances {-1, 0, +1}"
             >
-              <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
-              <span>Reprogram</span>
+              <RefreshCw className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>{t('analogReprogram')}</span>
             </button>
           </div>
         </div>
 
         {/* Global Synchronized Physics Sliders */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1.5">
-            <div className="flex justify-between text-xs font-mono">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4">
+          {/* Temperature */}
+          <div className="bg-slate-950 p-2.5 sm:p-3 rounded-lg border border-slate-800/80 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono">
               <span className="text-slate-300 flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-rose-400" />
-                <span>Operating Temperature (T):</span>
+                <Flame className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                <span>{t('analogTemp')}:</span>
               </span>
               <span className="text-rose-400 font-bold">{specs.temperatureKelvin} K ({specs.temperatureKelvin - 273}°C)</span>
             </div>
@@ -194,19 +201,20 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
               max="450"
               value={specs.temperatureKelvin}
               onChange={(e) => updateSpecField('temperatureKelvin', parseInt(e.target.value, 10))}
-              className="w-full accent-rose-500 cursor-pointer"
+              className="w-full h-2 bg-slate-800 rounded-lg accent-rose-500 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>200 K (Liquid Nitrogen)</span>
-              <span>450 K (Thermal Throttling)</span>
+            <div className="flex justify-between text-[9px] sm:text-[10px] text-slate-500 font-mono">
+              <span>{t('analogLiquidNitrogen')}</span>
+              <span>{t('analogThermalThrottling')}</span>
             </div>
           </div>
 
-          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1.5">
-            <div className="flex justify-between text-xs font-mono">
+          {/* Drift */}
+          <div className="bg-slate-950 p-2.5 sm:p-3 rounded-lg border border-slate-800/80 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono">
               <span className="text-slate-300 flex items-center gap-1">
-                <Activity className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Memristor Drift Variance (σ):</span>
+                <Activity className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>{t('analogDrift')}:</span>
               </span>
               <span className="text-cyan-400 font-bold">{(specs.conductanceDriftStd * 100).toFixed(0)}%</span>
             </div>
@@ -217,19 +225,20 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
               step="0.01"
               value={specs.conductanceDriftStd}
               onChange={(e) => updateSpecField('conductanceDriftStd', parseFloat(e.target.value))}
-              className="w-full accent-cyan-500 cursor-pointer"
+              className="w-full h-2 bg-slate-800 rounded-lg accent-cyan-500 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>0% (Ideal Matrix)</span>
-              <span>15% (Chaotic Oxide Filament)</span>
+            <div className="flex justify-between text-[9px] sm:text-[10px] text-slate-500 font-mono">
+              <span>{t('analogIdealMatrix')}</span>
+              <span>{t('analogChaoticOxide')}</span>
             </div>
           </div>
 
-          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800/80 space-y-1.5">
-            <div className="flex justify-between text-xs font-mono">
+          {/* TIA Gain */}
+          <div className="bg-slate-950 p-2.5 sm:p-3 rounded-lg border border-slate-800/80 space-y-1.5">
+            <div className="flex items-center justify-between text-[11px] sm:text-xs font-mono">
               <span className="text-slate-300 flex items-center gap-1">
-                <Sliders className="w-3.5 h-3.5 text-purple-400" />
-                <span>TIA Feedback Gain (R_f):</span>
+                <Sliders className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span>{t('analogTia')}:</span>
               </span>
               <span className="text-purple-400 font-bold">{(specs.tiaGainRf / 1000).toFixed(0)} kΩ</span>
             </div>
@@ -240,31 +249,41 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
               step="2500"
               value={specs.tiaGainRf}
               onChange={(e) => updateSpecField('tiaGainRf', parseInt(e.target.value, 10))}
-              className="w-full accent-purple-500 cursor-pointer"
+              className="w-full h-2 bg-slate-800 rounded-lg accent-purple-500 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>5 kΩ (Low Sens)</span>
-              <span>50 kΩ (High Gain Amplification)</span>
+            <div className="flex justify-between text-[9px] sm:text-[10px] text-slate-500 font-mono">
+              <span>{t('analogLowSens')}</span>
+              <span>{t('analogHighGain')}</span>
             </div>
           </div>
         </div>
 
-        {/* 8x8 Circuit Matrix */}
-        <div className="bg-slate-950/90 rounded-lg p-4 border border-slate-800 space-y-3 font-mono">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Physical 8×8 Crossbar Array Circuit</span>
-            <span className="text-slate-500">Horizontal: Wordline Voltages | Vertical: Bitline Currents</span>
+        {/* 8x8 Circuit Matrix with Touch and Mobile Optimization */}
+        <div className="bg-slate-950/90 rounded-lg p-3 sm:p-4 border border-slate-800 space-y-2.5 sm:space-y-3 font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px] sm:text-xs text-slate-400">
+            <span className="font-bold text-slate-200">{t('analogMatrixCircuit')}</span>
+            <span className="text-[10px] sm:text-xs text-slate-500">{t('analogMatrixSub')}</span>
           </div>
 
-          <div className="overflow-x-auto p-1">
-            <div className="min-w-[700px] space-y-2 text-xs">
+          {/* Mobile Swipe & Tap Guidance Banner */}
+          <div className="sm:hidden flex items-center justify-between gap-1 text-[10px] text-amber-300/90 bg-amber-950/40 px-2 py-1 rounded border border-amber-800/40">
+            <div className="flex items-center gap-1">
+              <TouchIcon className="w-3 h-3 text-amber-400 shrink-0 animate-bounce" />
+              <span>{t('analogSwipeHint')}</span>
+            </div>
+          </div>
+
+          {/* Horizontally scrollable crossbar table */}
+          <div className="overflow-x-auto -mx-1 px-1 pb-2 touch-pan-x select-none scrollbar-thin">
+            <div className="min-w-[620px] sm:min-w-[700px] space-y-1.5 sm:space-y-2 text-xs">
               {Array.from({ length: GRID_SIZE }).map((_, row) => {
                 const vRow = wordlineVoltages[row] || 0;
 
                 return (
-                  <div key={row} className="flex items-center gap-2">
-                    <div className="w-32 flex items-center gap-1.5 px-2 py-1 rounded bg-amber-950/60 border border-amber-700/60 text-amber-300 text-[11px]">
-                      <span className="font-bold">V[{row}]:</span>
+                  <div key={row} className="flex items-center gap-1.5 sm:gap-2">
+                    {/* Wordline Voltage Input Controller */}
+                    <div className="w-28 sm:w-32 flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 rounded bg-amber-950/60 border border-amber-700/60 text-amber-300 text-[10px] sm:text-[11px] shrink-0">
+                      <span className="font-bold shrink-0">V[{row}]:</span>
                       <input
                         type="range"
                         min="0"
@@ -272,14 +291,15 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
                         step="0.05"
                         value={vRow}
                         onChange={(e) => handleVoltageChange(row, parseFloat(e.target.value))}
-                        className="w-12 accent-amber-400 cursor-pointer"
+                        className="w-10 sm:w-12 accent-amber-400 cursor-pointer h-1.5 rounded"
                       />
-                      <span>{vRow.toFixed(2)}V</span>
+                      <span className="shrink-0">{vRow.toFixed(2)}V</span>
                     </div>
 
-                    <div className="w-3 h-0.5 bg-amber-500/60"></div>
+                    <div className="w-2 sm:w-3 h-0.5 bg-amber-500/60 shrink-0"></div>
 
-                    <div className="grid grid-cols-8 gap-2 flex-1">
+                    {/* 8 Col Conductance Cells */}
+                    <div className="grid grid-cols-8 gap-1 sm:gap-2 flex-1">
                       {Array.from({ length: GRID_SIZE }).map((_, col) => {
                         const cellIdx = col * GRID_SIZE + row;
                         const cell = crossbarGrid[cellIdx];
@@ -296,13 +316,15 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
                         return (
                           <div
                             key={col}
+                            onClick={() => setHoveredCell(isHovered ? null : { row, col })}
+                            onTouchStart={() => setHoveredCell({ row, col })}
                             onMouseEnter={() => setHoveredCell({ row, col })}
                             onMouseLeave={() => setHoveredCell(null)}
-                            className={`p-1.5 rounded border text-center transition cursor-pointer text-[10px] ${style} ${
-                              isHovered ? 'ring-2 ring-cyan-400 scale-110 z-10' : ''
+                            className={`p-1 sm:p-1.5 rounded border text-center transition cursor-pointer text-[9px] sm:text-[10px] active:scale-95 ${style} ${
+                              isHovered ? 'ring-2 ring-cyan-400 scale-105 sm:scale-110 z-10' : ''
                             }`}
                           >
-                            <div>{effG > 0 ? `+${effG.toFixed(0)}` : effG.toFixed(0)} µS</div>
+                            <div className="truncate">{effG > 0 ? `+${effG.toFixed(0)}` : effG.toFixed(0)} µS</div>
                           </div>
                         );
                       })}
@@ -311,20 +333,21 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
                 );
               })}
 
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
-                <div className="w-32 text-[10px] text-slate-400 text-right uppercase font-bold">
+              {/* Bitline Summary Totals Footer */}
+              <div className="flex items-center gap-1.5 sm:gap-2 pt-2 border-t border-slate-800">
+                <div className="w-28 sm:w-32 text-[9px] sm:text-[10px] text-slate-400 text-right uppercase font-bold shrink-0">
                   ∑ KCL Bitlines
                 </div>
-                <div className="w-3"></div>
-                <div className="grid grid-cols-8 gap-2 flex-1">
+                <div className="w-2 sm:w-3 shrink-0"></div>
+                <div className="grid grid-cols-8 gap-1 sm:gap-2 flex-1">
                   {Array.from({ length: GRID_SIZE }).map((_, col) => {
                     const iNet = telemetry.rawKirchhoffCurrents[col] * 1e6;
                     const vTia = telemetry.outputVoltages[col];
 
                     return (
-                      <div key={col} className="p-1.5 rounded bg-slate-900 border border-slate-700 text-center text-[10px]">
-                        <div className="text-cyan-300 font-black">{iNet.toFixed(1)} µA</div>
-                        <div className="text-[9px] text-purple-300 mt-0.5">{vTia.toFixed(2)} V</div>
+                      <div key={col} className="p-1 sm:p-1.5 rounded bg-slate-900 border border-slate-700 text-center text-[9px] sm:text-[10px]">
+                        <div className="text-cyan-300 font-black truncate">{iNet.toFixed(1)} µA</div>
+                        <div className="text-[8px] sm:text-[9px] text-purple-300 mt-0.5 truncate">{vTia.toFixed(2)} V</div>
                       </div>
                     );
                   })}
@@ -333,7 +356,8 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
             </div>
           </div>
 
-          <div className="bg-slate-900/90 rounded-md p-2.5 border border-slate-800 text-xs">
+          {/* Node Inspector Callout Bar */}
+          <div className="bg-slate-900/90 rounded-md p-2 sm:p-2.5 border border-slate-800 text-[11px] sm:text-xs">
             {hoveredCell !== null && crossbarGrid.length > 0 ? (
               (() => {
                 const cellIdx = hoveredCell.col * GRID_SIZE + hoveredCell.row;
@@ -343,57 +367,59 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
                 const current = v * effG;
 
                 return (
-                  <div className="flex flex-wrap items-center gap-2 text-slate-200">
-                    <span className="text-amber-400 font-bold">Node [Row {hoveredCell.row}, Col {hoveredCell.col}]:</span>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-slate-200">
+                    <span className="text-amber-400 font-bold shrink-0">[R{hoveredCell.row}, C{hoveredCell.col}]:</span>
                     <span>V = <strong className="text-white">{v.toFixed(3)} V</strong></span>
                     <span>× G = <strong className="text-cyan-300">{(effG * 1e6).toFixed(2)} µS</strong></span>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Ohm's Current (I = V × G) = <strong className={current >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{(current * 1e6).toFixed(2)} µA</strong></span>
+                    <ArrowRight className="w-3 h-3 text-slate-500 shrink-0" />
+                    <span>I (V×G) = <strong className={current >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{(current * 1e6).toFixed(2)} µA</strong></span>
                   </div>
                 );
               })()
             ) : (
-              <div className="text-slate-500">
-                Hover over any memristor node or slide any wordline voltage above to inspect Ohm's Law in real-time.
+              <div className="text-slate-500 text-[10px] sm:text-xs flex items-center gap-1.5">
+                <TouchIcon className="w-3.5 h-3.5 text-slate-400 shrink-0 hidden sm:inline" />
+                <span>{t('analogTapHint')}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Real-Time Energy & Physical Metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
-          <div className="bg-slate-900/80 p-2.5 rounded border border-slate-800">
-            <div className="text-[10px] text-slate-500 uppercase">Joule Heat Power</div>
-            <div className="text-sm font-bold text-amber-400 mt-0.5">
+        {/* Real-Time Energy & Physical Metrics Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5 text-xs font-mono">
+          <div className="bg-slate-900/80 p-2 sm:p-2.5 rounded border border-slate-800">
+            <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase">{t('analogJoulePower')}</div>
+            <div className="text-xs sm:text-sm font-bold text-amber-400 mt-0.5">
               {(telemetry.totalPowerWatts * 1000).toFixed(3)} mW
             </div>
-            <div className="text-[9px] text-slate-500 mt-0.5">P = ∑ V² × G</div>
+            <div className="text-[8px] sm:text-[9px] text-slate-500 mt-0.5 truncate">P = ∑ V² × G</div>
           </div>
 
-          <div className="bg-slate-900/80 p-2.5 rounded border border-slate-800">
-            <div className="text-[10px] text-slate-500 uppercase">Energy per Vector</div>
-            <div className="text-sm font-bold text-emerald-400 mt-0.5">
+          <div className="bg-slate-900/80 p-2 sm:p-2.5 rounded border border-slate-800">
+            <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase">{t('analogEnergyVec')}</div>
+            <div className="text-xs sm:text-sm font-bold text-emerald-400 mt-0.5">
               {(telemetry.energyJoules * 1e12).toFixed(2)} pJ
             </div>
-            <div className="text-[9px] text-emerald-400 mt-0.5">Ultra-low neuromorphic power</div>
+            <div className="text-[8px] sm:text-[9px] text-emerald-400 mt-0.5 truncate">Ultra-low neuromorphic</div>
           </div>
 
-          <div className="bg-slate-900/80 p-2.5 rounded border border-slate-800">
-            <div className="text-[10px] text-slate-500 uppercase">Thermal Noise Floor</div>
-            <div className="text-sm font-bold text-rose-400 mt-0.5">
+          <div className="bg-slate-900/80 p-2 sm:p-2.5 rounded border border-slate-800">
+            <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase">{t('analogNoiseFloor')}</div>
+            <div className="text-xs sm:text-sm font-bold text-rose-400 mt-0.5">
               {(Math.abs(telemetry.thermalNoiseCurrents[0]) * 1e9).toFixed(1)} nA
             </div>
-            <div className="text-[9px] text-slate-500 mt-0.5">i_n = √(4 k_B T B G)</div>
+            <div className="text-[8px] sm:text-[9px] text-slate-500 mt-0.5 truncate">i_n = √(4 k_B T B G)</div>
           </div>
 
-          <div className="bg-slate-900/80 p-2.5 rounded border border-slate-800">
-            <div className="text-[10px] text-slate-500 uppercase">TIA Feedback Scale</div>
-            <div className="text-sm font-bold text-purple-300 mt-0.5">
+          <div className="bg-slate-900/80 p-2 sm:p-2.5 rounded border border-slate-800">
+            <div className="text-[9px] sm:text-[10px] text-slate-500 uppercase">{t('analogTiaScale')}</div>
+            <div className="text-xs sm:text-sm font-bold text-purple-300 mt-0.5">
               {(specs.tiaGainRf / 1000).toFixed(0)} kΩ
             </div>
-            <div className="text-[9px] text-slate-500 mt-0.5">V_out = I × R_f</div>
+            <div className="text-[8px] sm:text-[9px] text-slate-500 mt-0.5 truncate">V_out = I × R_f</div>
           </div>
         </div>
+
       </div>
     </div>
   );
