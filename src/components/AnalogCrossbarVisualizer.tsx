@@ -275,14 +275,14 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
 
           {/* Horizontally scrollable crossbar table */}
           <div className="overflow-x-auto -mx-1 px-1 pb-2 touch-pan-x select-none scrollbar-thin">
-            <div className="min-w-[620px] sm:min-w-[700px] space-y-1.5 sm:space-y-2 text-xs">
+            <div className="min-w-[680px] sm:min-w-[760px] space-y-1.5 sm:space-y-2 text-xs">
               {Array.from({ length: GRID_SIZE }).map((_, row) => {
                 const vRow = wordlineVoltages[row] || 0;
 
                 return (
                   <div key={row} className="flex items-center gap-1.5 sm:gap-2">
                     {/* Wordline Voltage Input Controller */}
-                    <div className="w-28 sm:w-32 flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 rounded bg-amber-950/60 border border-amber-700/60 text-amber-300 text-[10px] sm:text-[11px] shrink-0">
+                    <div className="w-36 sm:w-40 flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg bg-amber-950/70 border border-amber-600/70 text-amber-300 text-[10px] sm:text-[11px] shrink-0 box-border shadow-sm">
                       <span className="font-bold shrink-0">V[{row}]:</span>
                       <input
                         type="range"
@@ -291,9 +291,9 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
                         step="0.05"
                         value={vRow}
                         onChange={(e) => handleVoltageChange(row, parseFloat(e.target.value))}
-                        className="w-10 sm:w-12 accent-amber-400 cursor-pointer h-1.5 rounded"
+                        className="flex-1 min-w-[42px] accent-amber-400 cursor-pointer h-1.5 rounded bg-slate-900"
                       />
-                      <span className="shrink-0">{vRow.toFixed(2)}V</span>
+                      <span className="shrink-0 w-11 text-right font-mono font-bold">{vRow.toFixed(2)}V</span>
                     </div>
 
                     <div className="w-2 sm:w-3 h-0.5 bg-amber-500/60 shrink-0"></div>
@@ -335,7 +335,7 @@ export const AnalogCrossbarVisualizer: React.FC = React.memo(() => {
 
               {/* Bitline Summary Totals Footer */}
               <div className="flex items-center gap-1.5 sm:gap-2 pt-2 border-t border-slate-800">
-                <div className="w-28 sm:w-32 text-[9px] sm:text-[10px] text-slate-400 text-right uppercase font-bold shrink-0">
+                <div className="w-36 sm:w-40 text-[9px] sm:text-[10px] text-slate-400 text-right uppercase font-bold shrink-0 pr-1">
                   ∑ KCL Bitlines
                 </div>
                 <div className="w-2 sm:w-3 shrink-0"></div>

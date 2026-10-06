@@ -419,43 +419,42 @@ export const Neural303Visualizer: React.FC = () => {
         onClose={() => setIsWavModalOpen(false)}
       />
 
-      {/* Unobtrusive Floating Count-In Indicator (Does not block synth controls or view) */}
-      {isLiveCountingIn && (
-        <div className="fixed top-16 right-5 z-40 bg-amber-950/90 border-2 border-amber-500 rounded-xl px-4 py-2.5 shadow-2xl backdrop-blur-md font-mono text-white flex items-center gap-3 animate-pulse pointer-events-none">
-          <span className="w-3 h-3 rounded-full bg-amber-400 animate-ping inline-block shrink-0" />
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-amber-300 uppercase tracking-wider">
-              {t('metronomeCountTitle')}:
-            </span>
-            <span className="text-2xl font-black text-amber-400 font-mono tracking-wider">
-              {liveCountInVal}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Floating Live Recording Status Indicator (Allows tweaking knobs while recording) */}
-      {isLiveRecordingActive && (
-        <div className="fixed bottom-5 right-5 z-40 bg-rose-950/95 border-2 border-rose-500 rounded-2xl p-3 sm:p-3.5 shadow-2xl backdrop-blur-md font-mono text-white flex items-center gap-3">
-          <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping inline-block shrink-0" />
-          <div>
-            <div className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-2">
-              <span>{t('recSession')}</span>
-              <span className="font-mono text-white font-bold">
-                {Math.floor(liveRecordingTime / 60).toString().padStart(2, '0')}:
-                {Math.floor(liveRecordingTime % 60).toString().padStart(2, '0')} / 10:00
+      {/* Unified Live Recording HUD Pill (Smooth Count-in -> Active Recording in the exact same spot) */}
+      {(isLiveCountingIn || isLiveRecordingActive) && (
+        <div
+          className={`fixed bottom-3 right-3 z-40 rounded-xl px-2.5 py-1.5 shadow-xl backdrop-blur-md font-mono text-white flex items-center gap-2 select-none transition-all duration-300 ${
+            isLiveCountingIn
+              ? 'bg-slate-950/95 border border-amber-500/90 shadow-[0_0_15px_rgba(245,158,11,0.4)] animate-pulse'
+              : 'bg-slate-950/90 border border-rose-500/80 shadow-[0_0_15px_rgba(239,68,68,0.3)]'
+          }`}
+        >
+          {isLiveCountingIn ? (
+            <>
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping inline-block shrink-0" />
+              <span className="text-[11px] font-black text-amber-300 uppercase tracking-wide">
+                {language === 'ru' ? 'ОТСЧЁТ:' : 'REC IN:'}
               </span>
-            </div>
-            <div className="text-[10px] text-slate-300 hidden sm:block">
-              {t('recSessionDesc')}
-            </div>
-          </div>
-          <button
-            onClick={() => setIsWavModalOpen(true)}
-            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer border border-rose-400 shrink-0 select-none"
-          >
-            {t('recWindowBtn')}
-          </button>
+              <span className="text-sm font-black text-amber-400 font-mono tracking-wider w-4 text-center">
+                {liveCountInVal}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block shrink-0" />
+              <span className="text-[11px] font-black text-rose-400 uppercase tracking-wide">REC</span>
+              <span className="font-mono text-white font-bold text-xs">
+                {Math.floor(liveRecordingTime / 60).toString().padStart(2, '0')}:
+                {Math.floor(liveRecordingTime % 60).toString().padStart(2, '0')}
+                <span className="text-slate-500 text-[10px] ml-0.5">/ 10m</span>
+              </span>
+              <button
+                onClick={() => setIsWavModalOpen(true)}
+                className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] shadow transition cursor-pointer border border-rose-400 shrink-0 select-none ml-1 active:scale-95"
+              >
+                {t('recWindowBtn')}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
