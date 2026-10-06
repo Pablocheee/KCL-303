@@ -110,12 +110,12 @@ export const Neural303Visualizer: React.FC = () => {
               TB-303
             </div>
             <div>
-              <div className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-900 flex items-center gap-2">
+              <h1 className="text-sm sm:text-base font-black tracking-wider uppercase text-slate-900 flex items-center gap-2 m-0 p-0">
                 <span>{t('synthTitle')}</span>
                 <span className="px-2 py-0.5 rounded bg-slate-800 text-emerald-400 text-[10px] font-bold border border-slate-700">
                   {t('dspBadge')}
                 </span>
-              </div>
+              </h1>
               <div className="text-[10px] sm:text-[11px] font-bold text-slate-700">
                 {t('synthSubtitle')}
               </div>

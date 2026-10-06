@@ -1,6 +1,6 @@
 {
-  "name": "BitNet DiskStream Engine",
-  "description": "Ultra-low-resource ternary neural network inference engine with disk-streaming memory mapping and zero-multiplication arithmetic.",
+  "name": "NMX-303 — Browser TB-303 Acid Synth",
+  "description": "Free TB-303 style acid bass synth in your browser. 32-step sequencer, morph filter, WAV export. No install — open and play.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

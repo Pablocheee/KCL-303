@@ -6,7 +6,7 @@ export const TRANSLATIONS = {
   ru: {
     // Navigation Bar
     tb303Tab: 'TB-303',
-    analogTab: 'Neuromorphic Analog Crossbar',
+    analogTab: 'Analog Crossbar',
     startAcidBtn: 'СТАРТ ЭСИД',
     stopAcidBtn: 'СТОП',
     undoTitle: 'Откат назад (Ctrl+Z)',
@@ -17,7 +17,7 @@ export const TRANSLATIONS = {
     langToggleTitle: 'Сменить язык интерфейса (RU / EN)',
     
     // Header & Synthesizer
-    synthTitle: 'NMX Hardware Synthesizer',
+    synthTitle: 'Browser TB-303 Acid Synthesizer',
     dspBadge: '32-BIT DSP',
     staticKnobs: 'Статичные ручки',
     staticKnobsActive: 'Статичные ручки активны',
@@ -320,7 +320,7 @@ export const TRANSLATIONS = {
   en: {
     // Navigation Bar
     tb303Tab: 'TB-303',
-    analogTab: 'Neuromorphic Analog Crossbar',
+    analogTab: 'Analog Crossbar',
     startAcidBtn: 'START ACID',
     stopAcidBtn: 'STOP',
     undoTitle: 'Undo (Ctrl+Z)',
@@ -331,7 +331,7 @@ export const TRANSLATIONS = {
     langToggleTitle: 'Switch Interface Language (RU / EN)',
     
     // Header & Synthesizer
-    synthTitle: 'NMX Hardware Synthesizer',
+    synthTitle: 'Browser TB-303 Acid Synthesizer',
     dspBadge: '32-BIT DSP',
     staticKnobs: 'Static Knobs',
     staticKnobsActive: 'Static Knobs Locked',

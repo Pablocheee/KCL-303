@@ -205,7 +205,7 @@ function MainApp() {
               <span>{t('tb303Tab')}</span>
             </button>
 
-            {/* 2. Sound-Affecting Hardware Tab: Neuromorphic Analog Crossbar */}
+            {/* 2. Sound-Affecting Hardware Tab: Analog Crossbar */}
             <button
               onClick={() => setActiveTab('analog')}
               className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3.5 py-1.5 sm:py-2 text-xs font-mono font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
