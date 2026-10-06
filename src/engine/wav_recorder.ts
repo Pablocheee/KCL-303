@@ -339,6 +339,7 @@ export async function renderPatternOffline(
 export class LiveSessionRecorder {
   private isRecording = false;
   private isCountingIn = false;
+  private currentCountIn = 4;
   private leftChunks: Float32Array[] = [];
   private rightChunks: Float32Array[] = [];
   private processorNode: ScriptProcessorNode | null = null;
@@ -350,6 +351,12 @@ export class LiveSessionRecorder {
   private countInTimer: any = null;
   private progressInterval: any = null;
   private startTime = 0;
+  private lastRecordedResult: {
+    blob: Blob;
+    durationSec: number;
+    sizeMb: number;
+    url: string;
+  } | null = null;
 
   // Callbacks
   private onCountInCallback?: (count: number) => void;
@@ -371,9 +378,14 @@ export class LiveSessionRecorder {
     return {
       isRecording: this.isRecording,
       isCountingIn: this.isCountingIn,
+      countInValue: this.currentCountIn,
       elapsedSec: this.isRecording ? (Date.now() - this.startTime) / 1000 : 0,
       maxSec: this.maxDurationSec,
     };
+  }
+
+  public getLastResult() {
+    return this.lastRecordedResult;
   }
 
   /**
@@ -399,6 +411,7 @@ export class LiveSessionRecorder {
     this.onFinishCallback = callbacks.onFinish;
 
     this.isCountingIn = true;
+    this.currentCountIn = 4;
     const beatIntervalMs = (60 / bpm) * 1000;
 
     let count = 4;
@@ -408,6 +421,7 @@ export class LiveSessionRecorder {
 
     this.countInTimer = setInterval(() => {
       count--;
+      this.currentCountIn = count;
       if (count > 0) {
         // Soft click on 3 and 2, higher click on 1
         dspAudio.playCountInClick(count === 1);
@@ -416,6 +430,7 @@ export class LiveSessionRecorder {
         // Count-in finished! Start real-time recording
         clearInterval(this.countInTimer);
         this.isCountingIn = false;
+        this.currentCountIn = 0;
         this.startLiveRecording();
       }
     }, beatIntervalMs);
@@ -529,12 +544,14 @@ export class LiveSessionRecorder {
     const sizeMb = Math.round((blob.size / (1024 * 1024)) * 10) / 10;
     const url = URL.createObjectURL(blob);
 
-    this.onFinishCallback?.({
+    this.lastRecordedResult = {
       blob,
       durationSec,
       sizeMb,
       url,
-    });
+    };
+
+    this.onFinishCallback?.(this.lastRecordedResult);
   }
 
   /**

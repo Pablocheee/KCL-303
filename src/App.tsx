@@ -234,7 +234,7 @@ function MainApp() {
                     ? 'bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-white border border-slate-700 shadow-[0_0_8px_rgba(245,158,11,0.25)]'
                     : 'text-slate-600 bg-slate-950/40 border border-slate-900 cursor-not-allowed opacity-40'
                 }`}
-                title={canUndo ? `${t('undoTitle')} — ${t('undoAvailable')}: ${undoCount}` : t('undoTitle')}
+                title={canUndo ? `${t('undoTitle')} - ${t('undoAvailable')}: ${undoCount}` : t('undoTitle')}
               >
                 <Undo2 className="w-3.5 h-3.5" />
                 {undoCount > 0 && (
@@ -254,7 +254,7 @@ function MainApp() {
                     ? 'bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-white border border-slate-700 shadow-[0_0_8px_rgba(6,182,212,0.25)]'
                     : 'text-slate-600 bg-slate-950/40 border border-slate-900 cursor-not-allowed opacity-40'
                 }`}
-                title={canRedo ? `${t('redoTitle')} — ${t('undoAvailable')}: ${redoCount}` : t('redoTitle')}
+                title={canRedo ? `${t('redoTitle')} - ${t('undoAvailable')}: ${redoCount}` : t('redoTitle')}
               >
                 <Redo2 className="w-3.5 h-3.5" />
                 {redoCount > 0 && (

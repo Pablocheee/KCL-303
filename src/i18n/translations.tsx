@@ -17,7 +17,7 @@ export const TRANSLATIONS = {
     langToggleTitle: 'Сменить язык интерфейса (RU / EN)',
     
     // Header & Synthesizer
-    synthTitle: 'Browser TB-303 Acid Synthesizer',
+    synthTitle: 'NMX HARDWARE SYNTHESIZER',
     dspBadge: '32-BIT DSP',
     staticKnobs: 'Статичные ручки',
     staticKnobsActive: 'Статичные ручки активны',
@@ -47,9 +47,9 @@ export const TRANSLATIONS = {
     auditionSolo: 'РЕЖИМ СОЛО',
     soloAuditionTitle: 'Отключает осцилляторы и оставляет только звук частиц электронов',
     quantumShotName: 'QUANTUM SHOT',
-    quantumShotDesc: '2·q·I — Дискретный треск квантовых пакетов на фильтре.',
+    quantumShotDesc: '2·q·I - Дискретный треск квантовых пакетов на фильтре.',
     thermalBoltzmannName: 'THERMAL BOLTZMANN',
-    thermalBoltzmannDesc: '4·k_B·T — Тёплый аналоговый дрейф строя, тепловое шипение.',
+    thermalBoltzmannDesc: '4·k_B·T - Тёплый аналоговый дрейф строя, тепловое шипение.',
     flickerFilamentName: '1/f MEMRISTOR',
     flickerFilamentDesc: 'Низкочастотный рокот вакансий кислорода и скачки RTS.',
     avalancheName: 'AVALANCHE',
@@ -129,7 +129,7 @@ export const TRANSLATIONS = {
     transposeDown: 'ВНИЗ',
     transposeNorm: 'НОРМ',
     transposeUp: 'ВВЕРХ',
-    stepRecordPrompt: 'Шаг #{step} — Нажмите клавишу ноты для записи и перехода к следующему шагу:',
+    stepRecordPrompt: 'Шаг #{step} - Нажмите клавишу ноты для записи и перехода к следующему шагу:',
     rhythmRecordPrompt: 'Ритмический ввод шага #{step} (нажатие кнопки автоматически продвигает шаг вперед):',
     fullScale32: 'Общая шкала 32 шагов (Кликните для выбора):',
     savePatternTitle: 'Сохранить паттерн в память',
@@ -151,8 +151,8 @@ export const TRANSLATIONS = {
     stepOctUp: '+8 OCT',
     allOctDown: 'ВСЕ -1 ОКТ',
     allOctUp: 'ВСЕ +1 ОКТ',
-    bar1Label: 'ТАКТ 1 (ШАГИ 1–16)',
-    bar2Label: 'ТАКТ 2 (ШАГИ 17–32)',
+    bar1Label: 'ТАКТ 1 (ШАГИ 1-16)',
+    bar2Label: 'ТАКТ 2 (ШАГИ 17-32)',
     bar1Playing: '● ТАКТ 1 ЗВУЧИТ',
     bar2Playing: '● ТАКТ 2 ЗВУЧИТ',
     hotkeysGuide: 'Клавиши:',
@@ -245,7 +245,7 @@ export const TRANSLATIONS = {
     liveRecordP1: 'Перед записью прозвучит негромкий счет 4..3..2..1 на текущем темпе ({bpm} BPM).',
     liveRecordP2: 'Сразу после счета автоматически включится воспроизведение и пойдет непрерывная запись мастер-шины.',
     liveRecordP3: 'Записываются все живые манипуляции со звуком: фильтры, резонанс, перегруз, температура, морфинг и переключение паттернов.',
-    liveRecordP4: 'Длительность записи — до 10 минут (600 секунд) с выводом студийного PCM WAV файла.',
+    liveRecordP4: 'Длительность записи: до 10 минут (600 секунд) с выводом студийного PCM WAV файла.',
     startLiveRecBtn: 'НАЧАТЬ ЖИВУЮ ЗАПИСЬ С ОТСЧЕТОМ (4..3..2..1)',
     recordCompleted: 'ЗАПИСЬ СЕССИИ УСПЕШНО ЗАВЕРШЕНА',
     listenPreview: 'Прослушать запись',
@@ -331,7 +331,7 @@ export const TRANSLATIONS = {
     langToggleTitle: 'Switch Interface Language (RU / EN)',
     
     // Header & Synthesizer
-    synthTitle: 'Browser TB-303 Acid Synthesizer',
+    synthTitle: 'NMX HARDWARE SYNTHESIZER',
     dspBadge: '32-BIT DSP',
     staticKnobs: 'Static Knobs',
     staticKnobsActive: 'Static Knobs Locked',
@@ -361,9 +361,9 @@ export const TRANSLATIONS = {
     auditionSolo: 'AUDITION SOLO',
     soloAuditionTitle: 'Mutes oscillators and isolates only the electron particle stream',
     quantumShotName: 'QUANTUM SHOT',
-    quantumShotDesc: '2·q·I — Discrete quantum shot packet crackle on filter.',
+    quantumShotDesc: '2·q·I - Discrete quantum shot packet crackle on filter.',
     thermalBoltzmannName: 'THERMAL BOLTZMANN',
-    thermalBoltzmannDesc: '4·k_B·T — Warm analog pitch drift & thermal hiss.',
+    thermalBoltzmannDesc: '4·k_B·T - Warm analog pitch drift & thermal hiss.',
     flickerFilamentName: '1/f MEMRISTOR',
     flickerFilamentDesc: 'Low-frequency oxygen vacancy rumble & RTS jumps.',
     avalancheName: 'AVALANCHE',
@@ -443,7 +443,7 @@ export const TRANSLATIONS = {
     transposeDown: 'DOWN',
     transposeNorm: 'NORM',
     transposeUp: 'UP',
-    stepRecordPrompt: 'Step #{step} — Press key to record note and advance:',
+    stepRecordPrompt: 'Step #{step} - Press key to record note and advance:',
     rhythmRecordPrompt: 'Rhythm input for Step #{step} (press button to advance step):',
     fullScale32: 'Full 32-step overview (Click to select):',
     savePatternTitle: 'Save Pattern to Memory',
@@ -465,8 +465,8 @@ export const TRANSLATIONS = {
     stepOctUp: '+8 OCT',
     allOctDown: 'ALL -1 OCT',
     allOctUp: 'ALL +1 OCT',
-    bar1Label: 'BAR 1 (STEPS 1–16)',
-    bar2Label: 'BAR 2 (STEPS 17–32)',
+    bar1Label: 'BAR 1 (STEPS 1-16)',
+    bar2Label: 'BAR 2 (STEPS 17-32)',
     bar1Playing: '● BAR 1 PLAYING',
     bar2Playing: '● BAR 2 PLAYING',
     hotkeysGuide: 'Keys:',
@@ -652,7 +652,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const stored = localStorage.getItem(STORAGE_LANG_KEY);
       if (stored === 'en' || stored === 'ru') return stored;
     } catch {}
-    return 'ru';
+    return 'en';
   });
 
   const setLanguage = (lang: Language) => {
@@ -663,12 +663,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const toggleLanguage = () => {
-    setLanguage(language === 'ru' ? 'en' : 'ru');
+    setLanguage(language === 'en' ? 'ru' : 'en');
   };
 
   const t = (key: TranslationKey | string): string => {
     const dict = TRANSLATIONS[language] as Record<string, string>;
-    const fallbackDict = TRANSLATIONS['ru'] as Record<string, string>;
+    const fallbackDict = TRANSLATIONS['en'] as Record<string, string>;
     return dict?.[key] || fallbackDict?.[key] || key;
   };
 
@@ -684,10 +684,10 @@ export const useLanguage = () => {
   if (!ctx) {
     // Fallback safe dummy if used outside provider
     return {
-      language: 'ru' as Language,
+      language: 'en' as Language,
       setLanguage: () => {},
       toggleLanguage: () => {},
-      t: (key: TranslationKey | string) => (TRANSLATIONS['ru'] as Record<string, string>)[key] || key,
+      t: (key: TranslationKey | string) => (TRANSLATIONS['en'] as Record<string, string>)[key] || key,
     };
   }
   return ctx;

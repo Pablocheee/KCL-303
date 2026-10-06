@@ -283,9 +283,9 @@ export const TransformerTextGenerator: React.FC = () => {
               <button
                 type="button"
                 onClick={togglePlay}
-                className={`w-[110px] h-7 rounded text-xs font-black transition cursor-pointer flex items-center justify-center gap-1.5 shadow select-none whitespace-nowrap shrink-0 ${
+                className={`w-[110px] h-7 rounded text-xs font-black transition-colors duration-150 cursor-pointer flex items-center justify-center gap-1.5 shadow select-none whitespace-nowrap shrink-0 ${
                   isPlaying
-                    ? 'bg-red-600 text-white animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.7)]'
+                    ? 'bg-red-600 text-white shadow-[0_0_8px_rgba(239,68,68,0.7)]'
                     : 'bg-indigo-600 hover:bg-indigo-500 text-white'
                 }`}
               >
@@ -464,7 +464,7 @@ export const TransformerTextGenerator: React.FC = () => {
           <div className="flex items-center justify-between pb-2 border-b border-slate-800">
             <h3 className="text-xs font-mono font-bold text-slate-200 flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Step {activeStep?.step || '—'} LM Head Logits Ranking</span>
+              <span>Step {activeStep?.step || '-'} LM Head Logits Ranking</span>
             </h3>
             <span className="text-[10px] font-mono text-slate-500">Top 5 Candidates</span>
           </div>

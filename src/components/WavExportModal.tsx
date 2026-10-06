@@ -72,11 +72,24 @@ export const WavExportModal: React.FC<WavExportModalProps> = ({ isOpen, onClose 
   const [isRenderingOffline, setIsRenderingOffline] = useState(false);
   const [offlineRenderDone, setOfflineRenderDone] = useState(false);
 
+  // Sync last recorded WAV on modal open
+  useEffect(() => {
+    if (isOpen) {
+      const lastRes = liveRecorder.getLastResult();
+      if (lastRes && !recordedWav) {
+        setRecordedWav(lastRes);
+      }
+    }
+  }, [isOpen, recordedWav]);
+
   // Handle Start Live Session with Metronome Count-in
   const handleStartLiveRecording = () => {
     setIsCountingIn(true);
     setCountInValue(4);
     setRecordedWav(null);
+
+    // Close modal immediately so user switches to main synth view
+    onClose();
 
     liveRecorder.startWithCountIn(bpm, {
       onCountIn: (count: number) => {

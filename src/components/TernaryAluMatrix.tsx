@@ -154,28 +154,28 @@ export const TernaryAluMatrix: React.FC<TernaryAluMatrixProps> = ({ currentLayer
               <div className="bg-slate-950 p-2 rounded border border-slate-800">
                 <div className="text-slate-500 text-[10px]">ADDITIONS (+)</div>
                 <div className="text-emerald-400 font-bold text-sm">
-                  {currentLayer ? currentLayer.additions.toLocaleString() : '—'}
+                  {currentLayer ? currentLayer.additions.toLocaleString() : '-'}
                 </div>
               </div>
 
               <div className="bg-slate-950 p-2 rounded border border-slate-800">
                 <div className="text-slate-500 text-[10px]">SUBTRACTIONS (-)</div>
                 <div className="text-rose-400 font-bold text-sm">
-                  {currentLayer ? currentLayer.subtractions.toLocaleString() : '—'}
+                  {currentLayer ? currentLayer.subtractions.toLocaleString() : '-'}
                 </div>
               </div>
 
               <div className="bg-slate-950 p-2 rounded border border-slate-800">
                 <div className="text-slate-500 text-[10px]">SKIPPED ZEROS (0)</div>
                 <div className="text-slate-400 font-bold text-sm">
-                  {currentLayer ? currentLayer.skips.toLocaleString() : '—'}
+                  {currentLayer ? currentLayer.skips.toLocaleString() : '-'}
                 </div>
               </div>
 
               <div className="bg-slate-950 p-2 rounded border border-slate-800">
                 <div className="text-slate-500 text-[10px]">COMPUTE TIME</div>
                 <div className="text-cyan-300 font-bold text-sm">
-                  {currentLayer ? `${currentLayer.computeTimeMs} ms` : '—'}
+                  {currentLayer ? `${currentLayer.computeTimeMs} ms` : '-'}
                 </div>
               </div>
             </div>

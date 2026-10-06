@@ -177,7 +177,7 @@ export const LayerActivationWaveform: React.FC<LayerActivationWaveformProps> = (
 
               <div className="flex justify-between items-center text-[10px] font-mono mt-2 text-slate-400">
                 <span>Output Logits</span>
-                <span className="text-amber-300 font-bold">{outputVector.length > 0 ? `${outputVector.length} dims ready` : '—'}</span>
+                <span className="text-amber-300 font-bold">{outputVector.length > 0 ? `${outputVector.length} dims ready` : '-'}</span>
               </div>
             </div>
           );

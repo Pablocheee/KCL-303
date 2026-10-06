@@ -63,6 +63,8 @@ export const Neural303Visualizer: React.FC = () => {
   const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
   const [isWavModalOpen, setIsWavModalOpen] = useState(false);
   const [isLiveRecordingActive, setIsLiveRecordingActive] = useState(false);
+  const [isLiveCountingIn, setIsLiveCountingIn] = useState(false);
+  const [liveCountInVal, setLiveCountInVal] = useState(4);
   const [liveRecordingTime, setLiveRecordingTime] = useState(0);
 
   // Monitor background live recording status so user can tweak knobs with modal closed
@@ -70,10 +72,12 @@ export const Neural303Visualizer: React.FC = () => {
     const timer = setInterval(() => {
       const status = liveRecorder.getStatus();
       setIsLiveRecordingActive(status.isRecording);
+      setIsLiveCountingIn(status.isCountingIn);
+      setLiveCountInVal(status.countInValue);
       if (status.isRecording) {
         setLiveRecordingTime(status.elapsedSec);
       }
-    }, 250);
+    }, 200);
     return () => clearInterval(timer);
   }, []);
 
@@ -122,29 +126,44 @@ export const Neural303Visualizer: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono flex-wrap">
-            <span className="w-[145px] h-8 px-2.5 rounded bg-slate-900 text-slate-300 font-bold border border-slate-700 flex items-center justify-center gap-2 shadow-sm shrink-0 select-none whitespace-nowrap">
-              <span className={`w-2 h-2 rounded-full shrink-0 ${isPlaying ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
-              <span className="truncate">{isPlaying ? t('acidEngineActive') : t('engineReady')}</span>
-            </span>
+          <div className="flex items-center gap-2 text-xs font-mono flex-nowrap shrink-0">
+            {/* Pinned LED Indicator Box */}
+            <div className="w-[155px] h-8 relative rounded bg-slate-900 text-slate-300 font-bold border border-slate-700 flex items-center shadow-sm shrink-0 select-none overflow-hidden">
+              {/* LED Light: absolutely pinned at left-3, exactly centered vertically */}
+              <div
+                className={`absolute left-3 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full transition-colors duration-200 shrink-0 ${
+                  isPlaying
+                    ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.9)]'
+                    : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
+                }`}
+              />
+              {/* Text label: starting at pl-8, never shifts the LED */}
+              <span className="pl-8 pr-2 truncate text-left font-mono tracking-tight">
+                {isPlaying ? t('acidEngineActive') : t('engineReady')}
+              </span>
+            </div>
 
             {/* START ACID / STOP Master Button in Silver Faceplate Toolbar */}
             <button
               type="button"
               onClick={togglePlay}
-              className={`w-[130px] h-8 flex items-center justify-center gap-1.5 rounded-lg font-black text-xs shadow-md transition cursor-pointer select-none whitespace-nowrap shrink-0 ${
+              className={`w-[130px] h-8 relative rounded-lg font-black text-xs shadow-md transition-colors duration-150 cursor-pointer select-none shrink-0 border flex items-center ${
                 isPlaying
-                  ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.7)] border border-red-400'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)] border border-emerald-400'
+                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.7)] border-red-400'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)] border-emerald-400'
               }`}
               title={isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}
             >
-              {isPlaying ? (
-                <Square className="w-3.5 h-3.5 fill-white shrink-0" />
-              ) : (
-                <Play className="w-3.5 h-3.5 fill-white shrink-0" />
-              )}
-              <span>{isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+                {isPlaying ? (
+                  <Square className="w-3.5 h-3.5 fill-white" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                )}
+              </span>
+              <span className="w-full text-center pl-5 pr-2 truncate font-mono">
+                {isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}
+              </span>
             </button>
           </div>
         </div>
@@ -400,10 +419,25 @@ export const Neural303Visualizer: React.FC = () => {
         onClose={() => setIsWavModalOpen(false)}
       />
 
+      {/* Unobtrusive Floating Count-In Indicator (Does not block synth controls or view) */}
+      {isLiveCountingIn && (
+        <div className="fixed top-16 right-5 z-40 bg-amber-950/90 border-2 border-amber-500 rounded-xl px-4 py-2.5 shadow-2xl backdrop-blur-md font-mono text-white flex items-center gap-3 animate-pulse pointer-events-none">
+          <span className="w-3 h-3 rounded-full bg-amber-400 animate-ping inline-block shrink-0" />
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-amber-300 uppercase tracking-wider">
+              {t('metronomeCountTitle')}:
+            </span>
+            <span className="text-2xl font-black text-amber-400 font-mono tracking-wider">
+              {liveCountInVal}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Floating Live Recording Status Indicator (Allows tweaking knobs while recording) */}
       {isLiveRecordingActive && (
-        <div className="fixed bottom-5 right-5 z-40 bg-rose-950/95 border-2 border-rose-500 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md font-mono text-white flex items-center gap-3 animate-pulse">
-          <span className="w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping inline-block" />
+        <div className="fixed bottom-5 right-5 z-40 bg-rose-950/95 border-2 border-rose-500 rounded-2xl p-3 sm:p-3.5 shadow-2xl backdrop-blur-md font-mono text-white flex items-center gap-3">
+          <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping inline-block shrink-0" />
           <div>
             <div className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-2">
               <span>{t('recSession')}</span>
@@ -412,13 +446,13 @@ export const Neural303Visualizer: React.FC = () => {
                 {Math.floor(liveRecordingTime % 60).toString().padStart(2, '0')} / 10:00
               </span>
             </div>
-            <div className="text-[10px] text-slate-300">
+            <div className="text-[10px] text-slate-300 hidden sm:block">
               {t('recSessionDesc')}
             </div>
           </div>
           <button
             onClick={() => setIsWavModalOpen(true)}
-            className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer border border-rose-400"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow transition cursor-pointer border border-rose-400 shrink-0 select-none"
           >
             {t('recWindowBtn')}
           </button>

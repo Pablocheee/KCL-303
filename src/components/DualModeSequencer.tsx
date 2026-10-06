@@ -577,7 +577,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
 
         {/* Note Name or Rest */}
         <span className="text-[9px] font-bold truncate max-w-full leading-none">
-          {step.gate ? step.noteName : '—'}
+          {step.gate ? step.noteName : '-'}
         </span>
 
         {/* Badges for Accent / Slide */}
@@ -983,19 +983,23 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
           <button
             type="button"
             onClick={togglePlay}
-            className={`w-[130px] h-8 flex items-center justify-center gap-1.5 rounded-lg font-black text-xs shadow-lg transition cursor-pointer select-none whitespace-nowrap shrink-0 ${
+            className={`w-[130px] h-8 relative rounded-lg font-black text-xs shadow-lg transition-colors duration-150 cursor-pointer select-none shrink-0 border flex items-center ${
               isPlaying
-                ? 'bg-red-600 hover:bg-red-500 text-white animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.7)] border border-red-400'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)] border border-emerald-400'
+                ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_12px_rgba(239,68,68,0.7)] border-red-400'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)] border-emerald-400'
             }`}
             title={isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}
           >
-            {isPlaying ? (
-              <Square className="w-3.5 h-3.5 fill-white shrink-0" />
-            ) : (
-              <Play className="w-3.5 h-3.5 fill-white shrink-0" />
-            )}
-            <span>{isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+              {isPlaying ? (
+                <Square className="w-3.5 h-3.5 fill-white" />
+              ) : (
+                <Play className="w-3.5 h-3.5 fill-white" />
+              )}
+            </span>
+            <span className="w-full text-center pl-5 pr-2 truncate font-mono">
+              {isPlaying ? t('stopAcidBtn') : t('startAcidBtn')}
+            </span>
           </button>
 
           {/* MASTER DSP POWER TOGGLE BUTTON */}
