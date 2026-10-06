@@ -237,24 +237,52 @@ export async function renderPatternOffline(
   narrowFilter.gain.setValueAtTime(waveNarrow * 13.0, 0);
 
   // 3. Distortion Stage
+  const clampedDrive = Math.max(0, Math.min(1.0, drive));
   const preDrive = offlineCtx.createGain();
-  const preGainVal = 1.0 + drive * 8.0;
+  const preGainVal = 1.0 + Math.pow(clampedDrive, 1.35) * 58.0;
   preDrive.gain.setValueAtTime(preGainVal, 0);
 
   const waveShaper = offlineCtx.createWaveShaper();
-  const n = 1024;
+  const n = 4096;
   const curve = new Float32Array(n);
-  const deg = Math.PI / 180;
-  const k = characterMode === 'classic_303' ? 18 : 32;
   for (let i = 0; i < n; i++) {
     const x = (i * 2) / n - 1;
-    curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+    if (characterMode === 'classic_303') {
+      const xPos = x > 0 ? x * 1.55 : x * 1.12;
+      const sat = Math.tanh(xPos) * 0.84 + 0.16 * Math.sin(Math.PI * 0.5 * Math.tanh(xPos * 1.8));
+      const warm2nd = 0.14 * (1.0 - Math.exp(-Math.abs(x * 2.8))) * (x > 0 ? 1 : -0.65);
+      curve[i] = Math.max(-1.0, Math.min(1.0, sat * 0.88 + warm2nd));
+    } else if (characterMode === 'industrial_drive') {
+      const xInd = x * 3.8;
+      let clipped = 0;
+      if (xInd > 0.38) {
+        clipped = 0.78 + 0.22 * Math.tanh((xInd - 0.38) * 4.5);
+      } else if (xInd < -0.32) {
+        clipped = -0.74 - 0.26 * Math.tanh((-xInd - 0.32) * 5.2);
+      } else {
+        clipped = xInd * 2.2;
+      }
+      const fuzzEdge = 0.16 * Math.sin(Math.PI * 3.8 * x) * Math.exp(-Math.abs(x * 2.2));
+      curve[i] = Math.max(-1.0, Math.min(1.0, clipped * 0.86 + fuzzEdge));
+    } else {
+      const xG = x * 2.8;
+      const asym = xG > 0 ? Math.pow(Math.abs(xG), 1.18) * Math.sign(xG) : xG * 0.88;
+      const diodeClip = Math.tanh(asym) * 0.74 + (xG / (1.0 + Math.abs(xG * 1.35))) * 0.26;
+      const screamBite = 0.24 * Math.sin(Math.PI * 2.6 * Math.tanh(x * 1.9)) * (1.0 - Math.min(1.0, x * x));
+      curve[i] = Math.max(-1.0, Math.min(1.0, (diodeClip + screamBite) * 1.12));
+    }
   }
   waveShaper.curve = curve;
   waveShaper.oversample = '4x';
 
+  const drivePresence = offlineCtx.createBiquadFilter();
+  drivePresence.type = 'peaking';
+  drivePresence.frequency.setValueAtTime(3400, 0);
+  drivePresence.Q.setValueAtTime(1.2 + clampedDrive * 0.9, 0);
+  drivePresence.gain.setValueAtTime(clampedDrive * 11.5, 0);
+
   const postDrive = offlineCtx.createGain();
-  postDrive.gain.setValueAtTime(1.0 / Math.sqrt(preGainVal), 0);
+  postDrive.gain.setValueAtTime(1.0 / (1.0 + Math.pow(clampedDrive, 0.72) * 2.85), 0);
 
   // 4. VCA Envelope
   const vcaGain = offlineCtx.createGain();
@@ -273,7 +301,8 @@ export async function renderPatternOffline(
   lpf2.connect(narrowFilter);
   narrowFilter.connect(preDrive);
   preDrive.connect(waveShaper);
-  waveShaper.connect(postDrive);
+  waveShaper.connect(drivePresence);
+  drivePresence.connect(postDrive);
   postDrive.connect(vcaGain);
   vcaGain.connect(masterGain);
   masterGain.connect(offlineCtx.destination);

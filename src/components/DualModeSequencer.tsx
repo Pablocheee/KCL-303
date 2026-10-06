@@ -1150,7 +1150,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
               className="bg-slate-950 border border-slate-700 text-white font-bold px-2 py-1 rounded focus:outline-none cursor-pointer max-w-[200px] sm:max-w-xs truncate text-xs"
             >
               {presets.some((p) => p.category === 'Tekno') && (
-                <optgroup label="🔊 Tekno / Acidcore (162-168 BPM)" className="bg-slate-950 text-purple-400">
+                <optgroup label="🔊 Tekno (162-168 BPM)" className="bg-slate-950 text-purple-400">
                   {presets
                     .filter((p) => p.category === 'Tekno')
                     .map((preset) => (
@@ -1161,10 +1161,10 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                 </optgroup>
               )}
 
-              {presets.some((p) => p.category === 'Acid') && (
-                <optgroup label="⚡ Acid Patterns (138-144 BPM)" className="bg-slate-950 text-amber-400">
+              {presets.some((p) => p.category === 'Acidcore' || p.category === 'Acid') && (
+                <optgroup label="⚡ Acidcore (165-174 BPM)" className="bg-slate-950 text-amber-400">
                   {presets
-                    .filter((p) => p.category === 'Acid')
+                    .filter((p) => p.category === 'Acidcore' || p.category === 'Acid')
                     .map((preset) => (
                       <option key={preset.id} value={preset.id} className="bg-slate-900 text-white">
                         [{preset.bpm} BPM] {preset.name}

@@ -170,7 +170,7 @@ export const TB303Touchpad: React.FC = () => {
       const realCutoff = 200 + (nextCutoff / 127) * 3300;
       const realResonance = 2 + (nextReso / 127) * 22;
       const realDecay = 0.08 + (nextDecay / 127) * 0.50;
-      const realDrive = 0.1 + (nextDrive / 127) * 0.8;
+      const realDrive = nextDrive / 127;
       const realEnvMod = nextEnvMod / 127;
       const realAccent = nextAccent / 127;
 

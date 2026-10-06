@@ -274,14 +274,14 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 1b. TR-8S Bipolar Morph Filter State
   const [isMorphEnabled, setIsMorphEnabledState] = useState<boolean>(true);
-  const [morphAmount, setMorphAmountState] = useState<number>(0);
+  const [morphAmount, setMorphAmountState] = useState<number>(-25);
   const [morphType, setMorphTypeState] = useState<FilterMorphType>('tr8s_dj');
-  const [morphResonance, setMorphResonanceState] = useState<number>(6);
+  const [morphResonance, setMorphResonanceState] = useState<number>(8.5);
 
   const isMorphEnabledRef = useRef<boolean>(true);
-  const morphAmountRef = useRef<number>(0);
+  const morphAmountRef = useRef<number>(-25);
   const morphTypeRef = useRef<FilterMorphType>('tr8s_dj');
-  const morphResonanceRef = useRef<number>(6);
+  const morphResonanceRef = useRef<number>(8.5);
 
   // 1b2. Continuous Pitch LFO State (Seamless Gapless Bass Vibrato / Drift)
   const [isPitchLfoEnabled, setIsPitchLfoEnabledState] = useState<boolean>(false);
@@ -298,7 +298,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // 1c. Preset Management
   const [presets, setPresets] = useState<SynthPreset[]>([]);
-  const [activePresetId, setActivePresetId] = useState<string | null>('acid-hardfloor-squelch');
+  const [activePresetId, setActivePresetId] = useState<string | null>('tekno-free-party-23');
 
   // 2. Physical Simulation Specs
   const [specs, setSpecs] = useState<AnalogHardwareSpecs>(DEFAULT_ANALOG_SPECS);
@@ -337,27 +337,27 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   // 4. Base Synthesizer Knob Settings (0-127 MIDI space)
-  const [baseCutoffCC, setBaseCutoffCCState] = useState(64);
-  const [baseResonanceCC, setBaseResonanceCCState] = useState(55);
-  const [baseEnvModCC, setBaseEnvModCCState] = useState(80);
-  const [baseDecayCC, setBaseDecayCCState] = useState(45);
-  const [baseAccentCC, setBaseAccentCCState] = useState(90);
-  const [baseDriveCC, setBaseDriveCCState] = useState(40);
+  const [baseCutoffCC, setBaseCutoffCCState] = useState(65);
+  const [baseResonanceCC, setBaseResonanceCCState] = useState(88);
+  const [baseEnvModCC, setBaseEnvModCCState] = useState(92);
+  const [baseDecayCC, setBaseDecayCCState] = useState(38);
+  const [baseAccentCC, setBaseAccentCCState] = useState(120);
+  const [baseDriveCC, setBaseDriveCCState] = useState(78);
   const [baseNarrowCC, setBaseNarrowCCState] = useState(127); // Always MAX (127) by default!
 
-  const baseCutoffRef = useRef(64);
-  const baseResonanceRef = useRef(55);
-  const baseEnvModRef = useRef(80);
-  const baseDecayRef = useRef(45);
-  const baseAccentRef = useRef(90);
-  const baseDriveRef = useRef(40);
+  const baseCutoffRef = useRef(65);
+  const baseResonanceRef = useRef(88);
+  const baseEnvModRef = useRef(92);
+  const baseDecayRef = useRef(38);
+  const baseAccentRef = useRef(120);
+  const baseDriveRef = useRef(78);
   const baseNarrowRef = useRef(127);
 
   const syncDspKnobs = useCallback(() => {
     const realCutoff = 200 + (baseCutoffRef.current / 127) * 3300;
     const realResonance = 2 + (baseResonanceRef.current / 127) * 22;
     const realDecay = 0.08 + (baseDecayRef.current / 127) * 0.50;
-    const realDrive = 0.1 + (baseDriveRef.current / 127) * 0.8;
+    const realDrive = baseDriveRef.current / 127;
     const realEnvMod = baseEnvModRef.current / 127;
     const realAccent = baseAccentRef.current / 127;
     dspAudio.setBaseKnobs(realCutoff, realResonance, realDecay, realEnvMod, realAccent, realDrive);
@@ -1232,7 +1232,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const realCutoff = 200 + (baseCutoffCC / 127) * 3300;
     const realResonance = 2 + (baseResonanceCC / 127) * 22;
     const realDecay = 0.08 + (baseDecayCC / 127) * 0.50;
-    const realDrive = 0.1 + (baseDriveCC / 127) * 0.8;
+    const realDrive = baseDriveCC / 127;
     const realEnvMod = baseEnvModCC / 127;
     const realAccent = baseAccentCC / 127;
 
@@ -1359,7 +1359,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const ok = PresetManager.deletePreset(id);
     if (ok) {
       setPresets(PresetManager.getAllPresets());
-      if (activePresetId === id) setActivePresetId('acid-hardfloor-squelch');
+      if (activePresetId === id) setActivePresetId('tekno-free-party-23');
     }
   };
 

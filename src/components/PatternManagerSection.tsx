@@ -162,7 +162,7 @@ export const PatternManagerSection: React.FC = React.memo(() => {
               }}
               className="bg-slate-900 border border-slate-700 text-amber-300 font-bold px-2 py-1 rounded focus:outline-none cursor-pointer max-w-[200px] sm:max-w-xs truncate text-xs"
             >
-              <optgroup label="🔊 Tekno / Acidcore (162-168 BPM)" className="bg-slate-950 text-purple-400">
+              <optgroup label="🔊 Tekno (162-168 BPM)" className="bg-slate-950 text-purple-400">
                 {patternList
                   .filter((p) => p.isFactory && (p.category.includes('Tekno') || p.category.includes('Hardtek')))
                   .map((pat) => (
@@ -172,9 +172,9 @@ export const PatternManagerSection: React.FC = React.memo(() => {
                   ))}
               </optgroup>
 
-              <optgroup label="⚡ Acid Patterns (138-144 BPM)" className="bg-slate-950 text-amber-400">
+              <optgroup label="⚡ Acidcore (165-174 BPM)" className="bg-slate-950 text-amber-400">
                 {patternList
-                  .filter((p) => p.isFactory && p.category.includes('Acid'))
+                  .filter((p) => p.isFactory && (p.category.includes('Acidcore') || p.category.includes('Acid')))
                   .map((pat) => (
                     <option key={pat.id} value={pat.id} className="bg-slate-900 text-slate-100">
                       [{pat.bpm} BPM] {pat.name}

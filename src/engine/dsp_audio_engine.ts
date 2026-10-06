@@ -113,10 +113,11 @@ export class DSPAudioEngine {
   }
 
   /**
-   * Precomputes rich harmonic saturation curves with preserved upper frequencies
+   * Precomputes rich analog harmonic saturation curves with authentic diode distortion,
+   * asymmetric clipping, germanium warmth, screaming 303 resonance bite, and razor fuzz
    */
   private precomputeDistortionCurves() {
-    const n = 1024;
+    const n = 4096;
     const classic = new Float32Array(n);
     const chaos = new Float32Array(n);
     const industrial = new Float32Array(n);
@@ -124,18 +125,34 @@ export class DSPAudioEngine {
     for (let i = 0; i < n; ++i) {
       const x = (i * 2) / n - 1;
 
-      // 1. Classic TB-303 Diode Saturation (Warm 2nd & 3rd order harmonics + bright top-end sparkle)
-      const x_classic = x * 1.8;
-      classic[i] = Math.tanh(x_classic) + 0.14 * Math.sin(Math.PI * x) * (1.0 - Math.abs(x) * 0.4);
+      // 1. Classic TB-303 Diode Saturation (Warm Boss OD-1 / TS-9 style Germanium & Silicon asymmetry)
+      // Positive swing has gentle progressive compression with 2nd harmonic warmth
+      // Negative swing has slightly firmer saturation with smooth knee
+      const xPos = x > 0 ? x * 1.55 : x * 1.12;
+      const sat = Math.tanh(xPos) * 0.84 + 0.16 * Math.sin(Math.PI * 0.5 * Math.tanh(xPos * 1.8));
+      const warm2nd = 0.14 * (1.0 - Math.exp(-Math.abs(x * 2.8))) * (x > 0 ? 1 : -0.65);
+      classic[i] = Math.max(-1.0, Math.min(1.0, sat * 0.88 + warm2nd));
 
-      // 2. Neural Chaos Diode Overdrive (Screaming Acid, razor-sharp bite, rich harmonic overtones)
-      const x_chaos = x > 0 ? Math.tanh(2.6 * x) : -0.88 * Math.tanh(2.0 * Math.abs(x));
-      const harmonicExciter = 0.28 * Math.sin(Math.PI * 1.5 * x) * (1.0 - Math.abs(x) * 0.5);
-      chaos[i] = Math.max(-1.0, Math.min(1.0, x_chaos + harmonicExciter));
+      // 2. Neural Chaos Diode Overdrive (Screaming Devilfish / ProCo RAT / Boss DS-1 Acid Fury)
+      // High-octane asymmetrical diode breakdown with biting harmonic edge and resonant squelch
+      const xG = x * 2.8;
+      const asym = xG > 0 ? Math.pow(Math.abs(xG), 1.18) * Math.sign(xG) : xG * 0.88;
+      const diodeClip = Math.tanh(asym) * 0.74 + (xG / (1.0 + Math.abs(xG * 1.35))) * 0.26;
+      const screamBite = 0.24 * Math.sin(Math.PI * 2.6 * Math.tanh(x * 1.9)) * (1.0 - Math.min(1.0, x * x));
+      chaos[i] = Math.max(-1.0, Math.min(1.0, (diodeClip + screamBite) * 1.12));
 
-      // 3. Industrial Hard Clipper / MOSFET Fuzz (Biting crunch & high-frequency edge)
-      const x_ind = Math.tanh(3.2 * x) + 0.22 * Math.sin(Math.PI * 2.0 * x) * (1.0 - x * x);
-      industrial[i] = Math.max(-1.0, Math.min(1.0, x_ind));
+      // 3. Industrial Hard Clipper / RAT Heavy Fuzz (Hard square-wave saturation & razor-sharp fuzz edge)
+      const xInd = x * 3.8;
+      let clipped = 0;
+      if (xInd > 0.38) {
+        clipped = 0.78 + 0.22 * Math.tanh((xInd - 0.38) * 4.5);
+      } else if (xInd < -0.32) {
+        clipped = -0.74 - 0.26 * Math.tanh((-xInd - 0.32) * 5.2);
+      } else {
+        clipped = xInd * 2.2;
+      }
+      const fuzzEdge = 0.16 * Math.sin(Math.PI * 3.8 * x) * Math.exp(-Math.abs(x * 2.2));
+      industrial[i] = Math.max(-1.0, Math.min(1.0, clipped * 0.86 + fuzzEdge));
     }
 
     this.staticClassicCurve = classic;
@@ -342,22 +359,23 @@ export class DSPAudioEngine {
 
     // 6. Zero-Allocation Drive Stage (PreGain -> WaveShaper -> Presence Stage -> PostGain)
     const preDriveGain = this.ctx.createGain();
-    const initialPreGain = 1.0 + this.driveAmount * 6.5;
+    const clampedDrive = Math.max(0, Math.min(1.0, this.driveAmount));
+    const initialPreGain = 1.0 + Math.pow(clampedDrive, 1.35) * 58.0;
     preDriveGain.gain.setValueAtTime(initialPreGain, now);
 
     const waveShaper = this.ctx.createWaveShaper();
     (waveShaper as any).curve = this.staticChaosCurve;
     waveShaper.oversample = '4x';
 
-    // Presence & High-Frequency Acid Sizzle Filter (Ensures drive adds bright crunch instead of muffling)
+    // Presence & High-Frequency Acid Sizzle Filter (Adds biting crunch, analog bite & screaming overtones)
     const drivePresenceFilter = this.ctx.createBiquadFilter();
     drivePresenceFilter.type = 'peaking';
     drivePresenceFilter.frequency.setValueAtTime(3400, now);
-    drivePresenceFilter.Q.setValueAtTime(1.1, now);
-    drivePresenceFilter.gain.setValueAtTime(this.driveAmount * 6.5, now);
+    drivePresenceFilter.Q.setValueAtTime(1.2 + clampedDrive * 0.9, now);
+    drivePresenceFilter.gain.setValueAtTime(clampedDrive * 11.5, now);
 
     const postDriveGain = this.ctx.createGain();
-    const initialPostGain = 1.0 / (1.0 + this.driveAmount * 0.35);
+    const initialPostGain = 1.0 / (1.0 + Math.pow(clampedDrive, 0.72) * 2.85);
     postDriveGain.gain.setValueAtTime(initialPostGain, now);
 
     // 7. Voltage Controlled Amplifier (VCA Gain Envelope)
@@ -818,16 +836,20 @@ export class DSPAudioEngine {
     }
 
     if (this.preDriveGain && this.postDriveGain) {
-      const preGainVal = 1.0 + drive * 6.5;
-      const postGainVal = 1.0 / (1.0 + drive * 0.35);
+      const clampedDrive = Math.max(0, Math.min(1.0, drive));
+      const preGainVal = 1.0 + Math.pow(clampedDrive, 1.35) * 58.0;
+      const postGainVal = 1.0 / (1.0 + Math.pow(clampedDrive, 0.72) * 2.85);
       this.preDriveGain.gain.setTargetAtTime(preGainVal, now, TC);
       this.postDriveGain.gain.setTargetAtTime(postGainVal, now, TC);
     }
 
     if (this.drivePresenceFilter) {
-      // High-Frequency harmonic presence boost scaling with drive (0dB to +7.5dB)
-      const presenceGain = drive * 7.5;
+      // High-Frequency harmonic presence boost scaling with drive (0dB to +11.5dB)
+      const clampedDrive = Math.max(0, Math.min(1.0, drive));
+      const presenceGain = clampedDrive * 11.5;
+      const presenceQ = 1.2 + clampedDrive * 0.9;
       this.drivePresenceFilter.gain.setTargetAtTime(presenceGain, now, TC);
+      this.drivePresenceFilter.Q.setTargetAtTime(presenceQ, now, TC);
     }
 
     if (this.waveNarrowFilter) {
