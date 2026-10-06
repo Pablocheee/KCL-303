@@ -170,6 +170,7 @@ export interface OfflineRenderOptions {
   envMod: number;
   accent: number;
   drive: number;
+  waveNarrow?: number;
   characterMode: string;
 }
 
@@ -190,6 +191,7 @@ export async function renderPatternOffline(
     envMod = 0.75,
     accent = 0.85,
     drive = 0.35,
+    waveNarrow = 1.0,
     characterMode = 'neural_chaos',
   } = options;
 
@@ -227,6 +229,13 @@ export async function renderPatternOffline(
   lpf2.frequency.setValueAtTime(cutoffHz, 0);
   lpf2.Q.setValueAtTime(resonanceQ * 0.7, 0);
 
+  // 2b. Hard Wave Squeezer / Resonant Narrow Filter
+  const narrowFilter = offlineCtx.createBiquadFilter();
+  narrowFilter.type = 'peaking';
+  narrowFilter.frequency.setValueAtTime(Math.min(6000, Math.max(350, cutoffHz * 1.15)), 0);
+  narrowFilter.Q.setValueAtTime(0.5 + waveNarrow * 4.2, 0);
+  narrowFilter.gain.setValueAtTime(waveNarrow * 13.0, 0);
+
   // 3. Distortion Stage
   const preDrive = offlineCtx.createGain();
   const preGainVal = 1.0 + drive * 8.0;
@@ -261,7 +270,8 @@ export async function renderPatternOffline(
   oscGain.connect(lpf1);
   subGain.connect(lpf1);
   lpf1.connect(lpf2);
-  lpf2.connect(preDrive);
+  lpf2.connect(narrowFilter);
+  narrowFilter.connect(preDrive);
   preDrive.connect(waveShaper);
   waveShaper.connect(postDrive);
   postDrive.connect(vcaGain);

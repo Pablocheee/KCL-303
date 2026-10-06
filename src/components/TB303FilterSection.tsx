@@ -22,6 +22,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
     setBaseAccentCC,
     baseDriveCC,
     setBaseDriveCC,
+    baseNarrowCC,
+    setBaseNarrowCC,
     effectiveCc,
     isMorphEnabled,
     toggleMorphEnabled,
@@ -241,8 +243,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
         </button>
       </div>
 
-      {/* 6 Rotary Control Knobs Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 items-start justify-items-center max-w-full">
+      {/* Rotary Control Knobs Grid (Waveform + 7 Filter Knobs) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3 items-start justify-items-center max-w-full">
         {/* Waveform Selector */}
         <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-slate-200/80 border border-slate-300 w-full h-[140px] space-y-2">
           <div className="text-[10px] font-black uppercase text-slate-700">{t('waveform')}</div>
@@ -359,6 +361,22 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               : `${Math.round((effectiveCc.drive / 127) * 100)}%`
           }
           onChange={setBaseDriveCC}
+        />
+
+        {/* 7. Hard Wave Squeezer / Narrow Filter Knob (Always MAX by default) */}
+        <HybridKnob
+          label={t('knobNarrow')}
+          subLabel="Wave Squeeze"
+          baseValue={baseNarrowCC}
+          effectiveValue={isStaticKnobsLocked ? baseNarrowCC : effectiveCc.narrow}
+          disableJitter={isStaticKnobsLocked}
+          color="amber"
+          displayValue={
+            isStaticKnobsLocked
+              ? (baseNarrowCC === 127 ? 'MAX (100%)' : `${Math.round((baseNarrowCC / 127) * 100)}%`)
+              : (effectiveCc.narrow === 127 ? 'MAX (100%)' : `${Math.round((effectiveCc.narrow / 127) * 100)}%`)
+          }
+          onChange={setBaseNarrowCC}
         />
       </div>
     </div>

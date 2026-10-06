@@ -134,13 +134,16 @@ interface EngineContextType {
   setBaseAccentCC: (val: number) => void;
   baseDriveCC: number;
   setBaseDriveCC: (val: number) => void;
+  baseNarrowCC: number;
+  setBaseNarrowCC: (val: number) => void;
   setAllBaseKnobsCC: (
-    cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; morph?: number },
+    cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; narrow?: number; morph?: number },
     resonance?: number,
     decay?: number,
     envMod?: number,
     accent?: number,
     drive?: number,
+    narrow?: number,
     morph?: number
   ) => void;
 
@@ -155,6 +158,7 @@ interface EngineContextType {
     resonance: number;
     decay: number;
     drive: number;
+    narrow: number;
     accent: number;
     envMod: number;
   };
@@ -339,6 +343,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [baseDecayCC, setBaseDecayCCState] = useState(45);
   const [baseAccentCC, setBaseAccentCCState] = useState(90);
   const [baseDriveCC, setBaseDriveCCState] = useState(40);
+  const [baseNarrowCC, setBaseNarrowCCState] = useState(127); // Always MAX (127) by default!
 
   const baseCutoffRef = useRef(64);
   const baseResonanceRef = useRef(55);
@@ -346,6 +351,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const baseDecayRef = useRef(45);
   const baseAccentRef = useRef(90);
   const baseDriveRef = useRef(40);
+  const baseNarrowRef = useRef(127);
 
   const syncDspKnobs = useCallback(() => {
     const realCutoff = 200 + (baseCutoffRef.current / 127) * 3300;
@@ -355,6 +361,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const realEnvMod = baseEnvModRef.current / 127;
     const realAccent = baseAccentRef.current / 127;
     dspAudio.setBaseKnobs(realCutoff, realResonance, realDecay, realEnvMod, realAccent, realDrive);
+    dspAudio.setWaveNarrow(baseNarrowRef.current / 127);
   }, []);
 
   // Initialize Pattern: 1. From localStorage active state; 2. Default to Factory Tekno 32-step pattern
@@ -657,13 +664,22 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     syncDspKnobs();
   }, [recordContinuousChange, syncDspKnobs]);
 
+  const setBaseNarrowCC = useCallback((val: number) => {
+    const clamped = Math.max(0, Math.min(127, Math.round(val)));
+    recordContinuousChange(`WaveNarrow: ${clamped}`);
+    baseNarrowRef.current = clamped;
+    setBaseNarrowCCState(clamped);
+    dspAudio.setWaveNarrow(clamped / 127);
+  }, [recordContinuousChange]);
+
   const setAllBaseKnobsCC = useCallback((
-    cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; morph?: number },
+    cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; narrow?: number; morph?: number },
     resonance?: number,
     decay?: number,
     envMod?: number,
     accent?: number,
     drive?: number,
+    narrow?: number,
     morph?: number
   ) => {
     recordContinuousChange('Macro Knobs');
@@ -674,6 +690,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (cutoff.decay !== undefined) { baseDecayRef.current = cutoff.decay; setBaseDecayCCState(cutoff.decay); }
       if (cutoff.accent !== undefined) { baseAccentRef.current = cutoff.accent; setBaseAccentCCState(cutoff.accent); }
       if (cutoff.drive !== undefined) { baseDriveRef.current = cutoff.drive; setBaseDriveCCState(cutoff.drive); }
+      if (cutoff.narrow !== undefined) { baseNarrowRef.current = cutoff.narrow; setBaseNarrowCCState(cutoff.narrow); }
       if (cutoff.morph !== undefined) { morphAmountRef.current = cutoff.morph; setMorphAmountState(cutoff.morph); }
     } else {
       if (cutoff !== undefined) { baseCutoffRef.current = cutoff; setBaseCutoffCCState(cutoff); }
@@ -682,6 +699,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (envMod !== undefined) { baseEnvModRef.current = envMod; setBaseEnvModCCState(envMod); }
       if (accent !== undefined) { baseAccentRef.current = accent; setBaseAccentCCState(accent); }
       if (drive !== undefined) { baseDriveRef.current = drive; setBaseDriveCCState(drive); }
+      if (narrow !== undefined) { baseNarrowRef.current = narrow; setBaseNarrowCCState(narrow); }
       if (morph !== undefined) { morphAmountRef.current = morph; setMorphAmountState(morph); }
     }
     syncDspKnobs();
@@ -1262,6 +1280,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setBaseDecayCC(preset.baseDecayCC);
     setBaseAccentCC(preset.baseAccentCC);
     setBaseDriveCC(preset.baseDriveCC);
+    setBaseNarrowCC(preset.baseNarrowCC !== undefined ? preset.baseNarrowCC : 127);
     setWaveform(preset.waveform);
 
     setMorphAmount(preset.morphAmount);
@@ -1310,6 +1329,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       baseDecayCC,
       baseAccentCC,
       baseDriveCC,
+      baseNarrowCC,
       waveform,
       morphAmount,
       morphType,
@@ -1371,9 +1391,10 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     resonance: Math.max(0, Math.min(127, Math.round(baseResonanceCC + (telemetry.entropy / 4.0 - 0.5) * 50))),
     decay: Math.max(0, Math.min(127, Math.round(baseDecayCC + ((telemetry.thermalNoiseAmperes * 1e9) / 400.0 - 0.3) * 45))),
     drive: Math.max(0, Math.min(127, Math.round(baseDriveCC + ((telemetry.powerMilliwatts / 8.0) - 0.3) * 40))),
+    narrow: Math.max(0, Math.min(127, baseNarrowCC)),
     accent: baseAccentCC,
     envMod: baseEnvModCC,
-  }), [baseCutoffCC, baseResonanceCC, baseDecayCC, baseDriveCC, baseAccentCC, baseEnvModCC, telemetry.totalCurrentAmperes, telemetry.entropy, telemetry.thermalNoiseAmperes, telemetry.powerMilliwatts]);
+  }), [baseCutoffCC, baseResonanceCC, baseDecayCC, baseDriveCC, baseNarrowCC, baseAccentCC, baseEnvModCC, telemetry.totalCurrentAmperes, telemetry.entropy, telemetry.thermalNoiseAmperes, telemetry.powerMilliwatts]);
 
   const effectiveCcRef = useRef(effectiveCc);
   effectiveCcRef.current = effectiveCc;
@@ -2003,6 +2024,8 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setBaseAccentCC,
         baseDriveCC,
         setBaseDriveCC,
+        baseNarrowCC,
+        setBaseNarrowCC,
         setAllBaseKnobsCC,
         isStaticKnobsLocked,
         setIsStaticKnobsLocked,

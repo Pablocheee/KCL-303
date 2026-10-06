@@ -37,6 +37,7 @@ export const TRANSLATIONS = {
     knobDecay: 'ЗАТУХАНИЕ (DECAY)',
     knobAccent: 'АКЦЕНТ (ACCENT)',
     knobOverdrive: 'ПЕРЕГРУЗ (DRIVE)',
+    knobNarrow: 'СЖАТИЕ ВОЛНЫ (NARROW)',
     knobMorph: 'TR-8S МОРФИРОВАНИЕ',
     knobFlux: 'ЭЛЕКТРОННЫЙ ФЛЮКС',
 
@@ -351,6 +352,7 @@ export const TRANSLATIONS = {
     knobDecay: 'DECAY TIME',
     knobAccent: 'ACCENT LEVEL',
     knobOverdrive: 'OVERDRIVE',
+    knobNarrow: 'WAVE SQUEEZE (NARROW)',
     knobMorph: 'TR-8S MORPH FILTER',
     knobFlux: 'ELECTRON FLUX',
 

@@ -148,6 +148,7 @@ export const WavExportModal: React.FC<WavExportModalProps> = ({ isOpen, onClose 
         envMod: effectiveCc.envMod / 127,
         accent: effectiveCc.accent / 127,
         drive: effectiveCc.drive / 127,
+        waveNarrow: (effectiveCc.narrow !== undefined ? effectiveCc.narrow : 127) / 127,
         characterMode: dspCharacterMode,
       });
 

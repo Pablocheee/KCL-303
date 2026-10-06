@@ -46,6 +46,8 @@ export class DSPAudioEngine {
   private subGain: GainNode | null = null;
   private stereoPanner: StereoPannerNode | null = null;
   private mainFilter: BiquadFilterNode | null = null;
+  private waveNarrowFilter: BiquadFilterNode | null = null;
+  public waveNarrowAmount: number = 1.0; // Default MAXIMUM (100% / 127) as requested!
 
   // Dedicated TR-8S Morph Filter Nodes (Bipolar LPF <-> Center Flat <-> HPF & Formant)
   private morphLPF: BiquadFilterNode | null = null;
@@ -283,6 +285,13 @@ export class DSPAudioEngine {
     mainFilter.Q.setValueAtTime(this.baseResonanceQ, now);
     pitchLfoGain.connect(mainFilter.detune); // Injects rich synced LFO modulation to filter cutoff in cents!
 
+    // 3b. Dedicated Hard Wave-Squeezer / Resonant Narrow Filter Stage
+    const waveNarrowFilter = this.ctx.createBiquadFilter();
+    waveNarrowFilter.type = 'peaking';
+    waveNarrowFilter.frequency.setValueAtTime(1600, now);
+    waveNarrowFilter.Q.setValueAtTime(0.5 + this.waveNarrowAmount * 4.2, now);
+    waveNarrowFilter.gain.setValueAtTime(this.waveNarrowAmount * 13.0, now);
+
     // 4. Dedicated TR-8S MORPH FILTER Parallel Structure
     const morphLPF = this.ctx.createBiquadFilter();
     morphLPF.type = 'lowpass';
@@ -314,18 +323,20 @@ export class DSPAudioEngine {
     const morphMerger = this.ctx.createGain();
     morphMerger.gain.setValueAtTime(1.0, now);
 
-    mainFilter.connect(morphGainDry);
+    mainFilter.connect(waveNarrowFilter);
+
+    waveNarrowFilter.connect(morphGainDry);
     morphGainDry.connect(morphMerger);
 
-    mainFilter.connect(morphLPF);
+    waveNarrowFilter.connect(morphLPF);
     morphLPF.connect(morphGainLPF);
     morphGainLPF.connect(morphMerger);
 
-    mainFilter.connect(morphHPF);
+    waveNarrowFilter.connect(morphHPF);
     morphHPF.connect(morphGainHPF);
     morphGainHPF.connect(morphMerger);
 
-    mainFilter.connect(morphFormant);
+    waveNarrowFilter.connect(morphFormant);
     morphFormant.connect(morphGainFormant);
     morphGainFormant.connect(morphMerger);
 
@@ -397,6 +408,7 @@ export class DSPAudioEngine {
     this.subGain = subGain;
     this.stereoPanner = stereoPanner;
     this.mainFilter = mainFilter;
+    this.waveNarrowFilter = waveNarrowFilter;
     this.morphLPF = morphLPF;
     this.morphHPF = morphHPF;
     this.morphFormant = morphFormant;
@@ -529,6 +541,19 @@ export class DSPAudioEngine {
       const targetCutoff = Math.max(100, Math.min(12000, this.baseCutoffHz + tempCutoffShift));
       this.mainFilter.frequency.setTargetAtTime(targetCutoff, now, 0.01);
     }
+  }
+
+  /**
+   * Sets the Hard Wave Squeezer / Resonant Narrowing Filter (0.0 = Wide Bypass, 1.0 = Max Hard Squeeze)
+   */
+  public setWaveNarrow(amount: number) {
+    this.waveNarrowAmount = Math.max(0, Math.min(1.0, amount));
+    if (!this.ctx || !this.waveNarrowFilter) return;
+    const now = this.ctx.currentTime;
+    const gain = this.waveNarrowAmount * 13.0; // 0 to +13dB hard resonant peaking
+    const q = 0.5 + this.waveNarrowAmount * 4.2; // sharp narrow Q
+    this.waveNarrowFilter.gain.setTargetAtTime(gain, now, 0.005);
+    this.waveNarrowFilter.Q.setTargetAtTime(q, now, 0.005);
   }
 
   /**
@@ -803,6 +828,11 @@ export class DSPAudioEngine {
       // High-Frequency harmonic presence boost scaling with drive (0dB to +7.5dB)
       const presenceGain = drive * 7.5;
       this.drivePresenceFilter.gain.setTargetAtTime(presenceGain, now, TC);
+    }
+
+    if (this.waveNarrowFilter) {
+      const centerHz = Math.min(6000, Math.max(350, this.baseCutoffHz * 1.15));
+      this.waveNarrowFilter.frequency.setTargetAtTime(centerHz, now, TC);
     }
   }
 

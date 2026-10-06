@@ -29,6 +29,7 @@ export interface SynthPreset {
   baseDecayCC: number;
   baseAccentCC: number;
   baseDriveCC: number;
+  baseNarrowCC?: number; // 0..127 (Default 127 = Max Hard Wave Squeeze)
   waveform: 'sawtooth' | 'square';
 
   // TR-8S Morph Filter

@@ -69,15 +69,17 @@ const PIANO_KEYS = [
 
 export type LfoSyncDivision = '2bar' | '1bar' | '1/2' | '1/4' | '1/8' | '1/16' | '1/8t' | 'custom';
 
-const LFO_SYNC_DIVISIONS: { id: LfoSyncDivision; label: string; multiplier: number; desc: string }[] = [
-  { id: '2bar', label: '2 Bar (32ш)', multiplier: 0.125, desc: 'Полный цикл на все 32 шага (2 такта)' },
-  { id: '1bar', label: '1 Bar (16ш)', multiplier: 0.25, desc: 'Один цикл на такт (16 шагов)' },
-  { id: '1/2', label: '1/2 (8ш)', multiplier: 0.5, desc: 'Два цикла на такт (каждые 8 шагов)' },
-  { id: '1/4', label: '1/4 (4ш)', multiplier: 1.0, desc: 'На каждую четвертную долю (4 шага)' },
-  { id: '1/8', label: '1/8 (2ш)', multiplier: 2.0, desc: 'На каждую восьмую ноту (2 шага)' },
-  { id: '1/16', label: '1/16 (1ш)', multiplier: 4.0, desc: 'Быстрый флаттер на каждый 16-й шаг' },
-  { id: '1/8t', label: '1/8 T', multiplier: 3.0, desc: 'Триольный acid свинг' },
+export const getLfoDivisions = (lang: 'ru' | 'en' = 'en') => [
+  { id: '2bar' as LfoSyncDivision, label: lang === 'ru' ? '2 Bar (32ш)' : '2 Bar (32 steps)', multiplier: 0.125, desc: lang === 'ru' ? 'Полный цикл на все 32 шага (2 такта)' : 'Full cycle over all 32 steps (2 bars)' },
+  { id: '1bar' as LfoSyncDivision, label: lang === 'ru' ? '1 Bar (16ш)' : '1 Bar (16 steps)', multiplier: 0.25, desc: lang === 'ru' ? 'Один цикл на такт (16 шагов)' : 'One cycle per bar (16 steps)' },
+  { id: '1/2' as LfoSyncDivision, label: lang === 'ru' ? '1/2 (8ш)' : '1/2 (8 steps)', multiplier: 0.5, desc: lang === 'ru' ? 'Два цикла на такт (каждые 8 шагов)' : 'Two cycles per bar (every 8 steps)' },
+  { id: '1/4' as LfoSyncDivision, label: lang === 'ru' ? '1/4 (4ш)' : '1/4 (4 steps)', multiplier: 1.0, desc: lang === 'ru' ? 'На каждую четвертную долю (4 шага)' : 'Every quarter beat (4 steps)' },
+  { id: '1/8' as LfoSyncDivision, label: lang === 'ru' ? '1/8 (2ш)' : '1/8 (2 steps)', multiplier: 2.0, desc: lang === 'ru' ? 'На каждую восьмую ноту (2 шага)' : 'Every 8th note (2 steps)' },
+  { id: '1/16' as LfoSyncDivision, label: lang === 'ru' ? '1/16 (1ш)' : '1/16 (1 step)', multiplier: 4.0, desc: lang === 'ru' ? 'Быстрый флаттер на каждый 16-й шаг' : 'Fast flutter on every 16th step' },
+  { id: '1/8t' as LfoSyncDivision, label: '1/8 T', multiplier: 3.0, desc: lang === 'ru' ? 'Триольный acid свинг' : 'Triplet acid swing' },
 ];
+
+const LFO_SYNC_DIVISIONS = getLfoDivisions('en');
 
 export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({ onOpenPresetModal, onOpenWavModal }) => {
   const {
@@ -595,7 +597,8 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
    * and deeply audible depth presets (±150c, ±350c, ±600c, ±1200c)
    */
   const renderCompactPitchLfoStrip = () => {
-    const activeSyncDiv = LFO_SYNC_DIVISIONS.find((d) => d.id === selectedLfoDivision);
+    const lfoDivs = getLfoDivisions(language as 'ru' | 'en');
+    const activeSyncDiv = lfoDivs.find((d) => d.id === selectedLfoDivision);
     const activeSyncLabel = activeSyncDiv ? activeSyncDiv.label : `${pitchLfoRate.toFixed(1)}Hz`;
 
     return (
@@ -663,7 +666,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                 <span className="text-emerald-400 font-bold">{bpm} BPM</span>
               </div>
               <div className="max-h-60 overflow-y-auto space-y-1 pt-1">
-                {LFO_SYNC_DIVISIONS.map((div) => {
+                {lfoDivs.map((div) => {
                   const isSelected = selectedLfoDivision === div.id && isPitchLfoEnabled;
                   const rateHz = ((bpm / 60) * div.multiplier).toFixed(2);
                   return (
@@ -1443,11 +1446,13 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-amber-400 font-bold flex items-center gap-1.5 whitespace-nowrap">
                 <Layers className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="hidden sm:inline">T-8 Tactile Step Sequencer ({totalSteps} шагов)</span>
-                <span className="sm:hidden">T-8 ({totalSteps}ш)</span>
+                <span className="hidden sm:inline">T-8 Tactile Step Sequencer ({totalSteps} {language === 'ru' ? 'шагов' : 'steps'})</span>
+                <span className="sm:hidden">T-8 ({totalSteps}{language === 'ru' ? 'ш' : 's'})</span>
               </span>
               <span className="text-[10px] text-slate-500 hidden md:inline truncate">
-                {totalSteps === 32 ? 'Визуально отображены все 32 шага (Такт 1 и Такт 2)' : 'Отображены 16 шагов (Такт 1)'}
+                {totalSteps === 32 
+                  ? (language === 'ru' ? 'Визуально отображены все 32 шага (Такт 1 и Такт 2)' : 'All 32 steps visible (Bar 1 & Bar 2)') 
+                  : (language === 'ru' ? 'Отображены 16 шагов (Такт 1)' : '16 steps visible (Bar 1)')}
               </span>
             </div>
 
@@ -1460,7 +1465,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                     : 'border-slate-700'
                 }`}
               >
-                <span className="text-slate-400 text-[10px] sm:text-[11px]">Шаг:</span>
+                <span className="text-slate-400 text-[10px] sm:text-[11px]">{language === 'ru' ? 'Шаг:' : 'Step:'}</span>
                 <span className="text-amber-400 font-black text-xs font-mono w-6 sm:w-7 text-left">
                   #{selectedStepIdx + 1}
                 </span>
@@ -1474,7 +1479,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                   className={`font-mono font-bold text-xs w-9 sm:w-11 text-center transition cursor-pointer select-none hover:scale-105 active:scale-95 ${
                     isShiftPressed ? 'text-amber-300 font-black animate-pulse' : 'text-emerald-400 hover:text-emerald-300'
                   }`}
-                  title={`Прослушать ноту шага #${selectedStepIdx + 1} (${currentStepData.noteName})`}
+                  title={language === 'ru' ? `Прослушать ноту шага #${selectedStepIdx + 1} (${currentStepData.noteName})` : `Audition step note #${selectedStepIdx + 1} (${currentStepData.noteName})`}
                 >
                   [{currentStepData.noteName}]
                 </button>
@@ -1494,7 +1499,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                       ? 'bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
                       : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 hover:text-white'
                   }`}
-                  title={`Клик: ${currentStepData.gate ? 'Выключить ноту (REST)' : 'Включить ноту (TRIG ON)'} для шага #${selectedStepIdx + 1}`}
+                  title={language === 'ru' ? `Клик: ${currentStepData.gate ? 'Выключить ноту (REST)' : 'Включить ноту (TRIG ON)'} для шага #${selectedStepIdx + 1}` : `Click: ${currentStepData.gate ? 'Turn off (REST)' : 'Turn on (TRIG ON)'} for step #${selectedStepIdx + 1}`}
                 >
                   {currentStepData.gate ? 'TRIG ON' : 'REST'}
                 </button>
@@ -1514,7 +1519,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                       ? 'text-red-300 bg-red-950/80 border border-red-600 shadow-[0_0_8px_rgba(239,68,68,0.4)] hover:bg-red-900'
                       : 'text-slate-600 border border-slate-800/60 bg-slate-950/40 hover:border-red-800/80 hover:text-red-400 opacity-60 hover:opacity-100'
                   }`}
-                  title={`Клик: ${currentStepData.accent ? 'Убрать акцент' : 'Включить акцент (ACC)'} для шага #${selectedStepIdx + 1}`}
+                  title={language === 'ru' ? `Клик: ${currentStepData.accent ? 'Убрать акцент' : 'Включить акцент (ACC)'} для шага #${selectedStepIdx + 1}` : `Click: ${currentStepData.accent ? 'Remove accent' : 'Enable accent (ACC)'} for step #${selectedStepIdx + 1}`}
                 >
                   ACC
                 </button>
@@ -1531,7 +1536,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                       ? 'text-cyan-300 bg-cyan-950/80 border border-cyan-600 shadow-[0_0_8px_rgba(6,182,212,0.4)] hover:bg-cyan-900'
                       : 'text-slate-600 border border-slate-800/60 bg-slate-950/40 hover:border-cyan-800/80 hover:text-cyan-400 opacity-60 hover:opacity-100'
                   }`}
-                  title={`Клик: ${currentStepData.slide ? 'Убрать слайд' : 'Включить слайд (SLIDE)'} для шага #${selectedStepIdx + 1}`}
+                  title={language === 'ru' ? `Клик: ${currentStepData.slide ? 'Убрать слайд' : 'Включить слайд (SLIDE)'} для шага #${selectedStepIdx + 1}` : `Click: ${currentStepData.slide ? 'Remove slide' : 'Enable slide (SLIDE)'} for step #${selectedStepIdx + 1}`}
                 >
                   SLIDE
                 </button>
@@ -1755,7 +1760,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                       setSelectedStepIdx(prev);
                     }}
                     className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer active:scale-95"
-                    title="Предыдущий шаг"
+                    title={language === 'ru' ? 'Предыдущий шаг' : 'Previous step'}
                   >
                     <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
@@ -1765,7 +1770,7 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
                       setSelectedStepIdx(next);
                     }}
                     className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer active:scale-95"
-                    title="Следующий шаг"
+                    title={language === 'ru' ? 'Следующий шаг' : 'Next step'}
                   >
                     <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
