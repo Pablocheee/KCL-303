@@ -826,12 +826,32 @@ export class DSPAudioEngine {
     const TC = 0.005; // 5ms seamless continuous smoothing
 
     if (this.mainFilter) {
-      this.mainFilter.Q.setTargetAtTime(this.baseResonanceQ, now, TC);
-      if (!this.isEnvelopeActive) {
-        this.mainFilter.frequency.setTargetAtTime(this.baseCutoffHz, now, TC);
-      } else {
-        // Smoothly adjust filter cutoff in real-time during note decay with zero lag
-        this.mainFilter.frequency.setTargetAtTime(this.baseCutoffHz, now, 0.015);
+      try {
+        this.mainFilter.Q.setTargetAtTime(this.baseResonanceQ, now, TC);
+      } catch {
+        this.mainFilter.Q.value = this.baseResonanceQ;
+      }
+
+      try {
+        if (!this.isEnvelopeActive) {
+          this.mainFilter.frequency.setTargetAtTime(this.baseCutoffHz, now, TC);
+        } else {
+          // If envelope ramp is active during note decay, safely cancel and transition to new cutoff floor
+          const freqParam = this.mainFilter.frequency as any;
+          if (typeof freqParam.cancelAndHoldAtTime === 'function') {
+            freqParam.cancelAndHoldAtTime(now);
+          } else {
+            freqParam.cancelScheduledValues(now);
+          }
+          this.mainFilter.frequency.setTargetAtTime(this.baseCutoffHz, now, 0.012);
+        }
+      } catch {
+        try {
+          this.mainFilter.frequency.cancelScheduledValues(now);
+          this.mainFilter.frequency.setValueAtTime(this.baseCutoffHz, now);
+        } catch {
+          this.mainFilter.frequency.value = this.baseCutoffHz;
+        }
       }
     }
 
@@ -839,8 +859,13 @@ export class DSPAudioEngine {
       const clampedDrive = Math.max(0, Math.min(1.0, drive));
       const preGainVal = 1.0 + Math.pow(clampedDrive, 1.35) * 58.0;
       const postGainVal = 1.0 / (1.0 + Math.pow(clampedDrive, 0.72) * 2.85);
-      this.preDriveGain.gain.setTargetAtTime(preGainVal, now, TC);
-      this.postDriveGain.gain.setTargetAtTime(postGainVal, now, TC);
+      try {
+        this.preDriveGain.gain.setTargetAtTime(preGainVal, now, TC);
+        this.postDriveGain.gain.setTargetAtTime(postGainVal, now, TC);
+      } catch {
+        this.preDriveGain.gain.value = preGainVal;
+        this.postDriveGain.gain.value = postGainVal;
+      }
     }
 
     if (this.drivePresenceFilter) {
@@ -848,13 +873,22 @@ export class DSPAudioEngine {
       const clampedDrive = Math.max(0, Math.min(1.0, drive));
       const presenceGain = clampedDrive * 11.5;
       const presenceQ = 1.2 + clampedDrive * 0.9;
-      this.drivePresenceFilter.gain.setTargetAtTime(presenceGain, now, TC);
-      this.drivePresenceFilter.Q.setTargetAtTime(presenceQ, now, TC);
+      try {
+        this.drivePresenceFilter.gain.setTargetAtTime(presenceGain, now, TC);
+        this.drivePresenceFilter.Q.setTargetAtTime(presenceQ, now, TC);
+      } catch {
+        this.drivePresenceFilter.gain.value = presenceGain;
+        this.drivePresenceFilter.Q.value = presenceQ;
+      }
     }
 
     if (this.waveNarrowFilter) {
       const centerHz = Math.min(6000, Math.max(350, this.baseCutoffHz * 1.15));
-      this.waveNarrowFilter.frequency.setTargetAtTime(centerHz, now, TC);
+      try {
+        this.waveNarrowFilter.frequency.setTargetAtTime(centerHz, now, TC);
+      } catch {
+        this.waveNarrowFilter.frequency.value = centerHz;
+      }
     }
   }
 

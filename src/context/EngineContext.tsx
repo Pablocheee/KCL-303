@@ -124,18 +124,25 @@ interface EngineContextType {
   // Base 303 Synth Knobs (0..127 MIDI space / physical units)
   baseCutoffCC: number;
   setBaseCutoffCC: (val: number) => void;
+  setDirectCutoffCC: (val: number) => void;
   baseResonanceCC: number;
   setBaseResonanceCC: (val: number) => void;
+  setDirectResonanceCC: (val: number) => void;
   baseEnvModCC: number;
   setBaseEnvModCC: (val: number) => void;
+  setDirectEnvModCC: (val: number) => void;
   baseDecayCC: number;
   setBaseDecayCC: (val: number) => void;
+  setDirectDecayCC: (val: number) => void;
   baseAccentCC: number;
   setBaseAccentCC: (val: number) => void;
+  setDirectAccentCC: (val: number) => void;
   baseDriveCC: number;
   setBaseDriveCC: (val: number) => void;
+  setDirectDriveCC: (val: number) => void;
   baseNarrowCC: number;
   setBaseNarrowCC: (val: number) => void;
+  setDirectNarrowCC: (val: number) => void;
   setAllBaseKnobsCC: (
     cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; narrow?: number; morph?: number },
     resonance?: number,
@@ -671,6 +678,43 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setBaseNarrowCCState(clamped);
     dspAudio.setWaveNarrow(clamped / 127);
   }, [recordContinuousChange]);
+
+  // Zero-latency Direct DSP audio setters for ultra-smooth real-time knob dragging
+  const setDirectCutoffCC = useCallback((val: number) => {
+    baseCutoffRef.current = val;
+    syncDspKnobs();
+  }, [syncDspKnobs]);
+
+  const setDirectResonanceCC = useCallback((val: number) => {
+    baseResonanceRef.current = val;
+    syncDspKnobs();
+  }, [syncDspKnobs]);
+
+  const setDirectEnvModCC = useCallback((val: number) => {
+    baseEnvModRef.current = val;
+    syncDspKnobs();
+  }, [syncDspKnobs]);
+
+  const setDirectDecayCC = useCallback((val: number) => {
+    baseDecayRef.current = val;
+    syncDspKnobs();
+  }, [syncDspKnobs]);
+
+  const setDirectAccentCC = useCallback((val: number) => {
+    baseAccentRef.current = val;
+    syncDspKnobs();
+  }, [syncDspKnobs]);
+
+  const setDirectDriveCC = useCallback((val: number) => {
+    baseDriveRef.current = val;
+    syncDspKnobs();
+  }, [syncDspKnobs]);
+
+  const setDirectNarrowCC = useCallback((val: number) => {
+    const clamped = Math.max(0, Math.min(127, Math.round(val)));
+    baseNarrowRef.current = clamped;
+    dspAudio.setWaveNarrow(clamped / 127);
+  }, []);
 
   const setAllBaseKnobsCC = useCallback((
     cutoff?: number | { cutoff?: number; resonance?: number; envMod?: number; decay?: number; accent?: number; drive?: number; narrow?: number; morph?: number },
@@ -2014,18 +2058,25 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setPattern,
         baseCutoffCC,
         setBaseCutoffCC,
+        setDirectCutoffCC,
         baseResonanceCC,
         setBaseResonanceCC,
+        setDirectResonanceCC,
         baseEnvModCC,
         setBaseEnvModCC,
+        setDirectEnvModCC,
         baseDecayCC,
         setBaseDecayCC,
+        setDirectDecayCC,
         baseAccentCC,
         setBaseAccentCC,
+        setDirectAccentCC,
         baseDriveCC,
         setBaseDriveCC,
+        setDirectDriveCC,
         baseNarrowCC,
         setBaseNarrowCC,
+        setDirectNarrowCC,
         setAllBaseKnobsCC,
         isStaticKnobsLocked,
         setIsStaticKnobsLocked,

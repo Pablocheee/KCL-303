@@ -137,6 +137,7 @@ export const HybridKnob: React.FC<HybridKnobProps> = memo(({
     }
 
     let latestClamped = baseValue;
+    let lastDispatched = baseValue;
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
       // Delta Y: Moving UP increases value; moving DOWN decreases value
@@ -150,9 +151,13 @@ export const HybridKnob: React.FC<HybridKnobProps> = memo(({
       latestClamped = clamped;
       currentValRef.current = clamped;
 
-      // 1. DIRECT 0ms AUDIO UPDATE (Zero React re-render, Zero CPU overhead)
-      if (onDirectChangeRef.current) {
-        onDirectChangeRef.current(clamped);
+      // 1. INSTANT REAL-TIME CONTINUOUS AUDIO & STATE UPDATE (Sound changes synchronously with knob movement!)
+      if (clamped !== lastDispatched) {
+        lastDispatched = clamped;
+        if (onDirectChangeRef.current) {
+          onDirectChangeRef.current(clamped);
+        }
+        onChangeRef.current(clamped);
       }
 
       // 2. DIRECT DOM VISUAL ROTATION (Hardware accelerated, Zero lag)
@@ -181,21 +186,31 @@ export const HybridKnob: React.FC<HybridKnobProps> = memo(({
       }
     };
 
-    const handlePointerUp = (upEvent: PointerEvent) => {
-      // Final commit on release
-      onChangeRef.current(latestClamped);
-      setIsDragging(false);
-
+    const cleanUp = () => {
       try {
-        target.releasePointerCapture(upEvent.pointerId);
+        target.releasePointerCapture(e.pointerId);
       } catch {
         // Ignored
       }
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
+      target.removeEventListener('lostpointercapture', cleanUp);
     };
 
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      // Final commit on release if not already dispatched
+      if (latestClamped !== lastDispatched) {
+        if (onDirectChangeRef.current) {
+          onDirectChangeRef.current(latestClamped);
+        }
+        onChangeRef.current(latestClamped);
+      }
+      setIsDragging(false);
+      cleanUp();
+    };
+
+    target.addEventListener('lostpointercapture', cleanUp);
     window.addEventListener('pointermove', handlePointerMove, { passive: false });
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('pointercancel', handlePointerUp);

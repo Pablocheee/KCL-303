@@ -82,7 +82,9 @@ function MainApp() {
       if (res.ok) {
         const data = await res.json();
         setModelMeta(data);
+        return;
       }
+      throw new Error('Fallback');
     } catch {
       // Fallback metadata for offline / client preview
       setModelMeta({
@@ -159,6 +161,7 @@ function MainApp() {
       eventSource.close();
       setIsStreaming(false);
       setActiveLayerIdx(null);
+      handleRunOneShot(false);
     };
   };
 
@@ -178,9 +181,90 @@ function MainApp() {
         if (data.layers.length > 0) {
           setCurrentLayerStat(data.layers[data.layers.length - 1]);
         }
+        return;
       }
-    } catch (e) {
-      console.error('Inference error', e);
+      throw new Error('Offline fallback');
+    } catch {
+      // In-browser mock computation for static embed / itch.io hosting
+      const sampleAct = Array.from({ length: 64 }, () => Math.random() * 2 - 1);
+      const sampleWeights = Array.from({ length: 64 }, () => Math.floor(Math.random() * 3) - 1);
+      const mockResult: InferenceResult = {
+        inputVectorSample: inputVector.slice(0, 64),
+        outputVector: inputVector.slice(0, 128).map((v) => Math.tanh(v * 1.5)),
+        totalTimeMs: 1.24,
+        totalDiskReadTimeMs: 0.15,
+        totalComputeTimeMs: 1.09,
+        totalAdditions: 305833,
+        totalSubtractions: 152916,
+        totalSkips: 150000,
+        totalOperations: 608749,
+        fp32EquivalentFlops: 1217498,
+        memoryPeakBytes: 1048576,
+        modelSizeBytes: 458752,
+        modelPath: 'data/bitnet_model.bin',
+        layers: [
+          {
+            layerIndex: 0,
+            name: 'Linear-1 (Input Projection)',
+            inSize: 256,
+            outSize: 512,
+            offset: 0,
+            byteLength: 131072,
+            readTimeMs: 0.05,
+            computeTimeMs: 0.37,
+            additions: 87381,
+            subtractions: 43690,
+            skips: 43690,
+            heapUsedBytes: 524288,
+            activationSample: sampleAct,
+            activationMin: -0.95,
+            activationMax: 0.98,
+            activationMean: 0.02,
+            weightsSample: sampleWeights,
+          },
+          {
+            layerIndex: 1,
+            name: 'Linear-2 (Hidden Transformation)',
+            inSize: 512,
+            outSize: 512,
+            offset: 131072,
+            byteLength: 262144,
+            readTimeMs: 0.07,
+            computeTimeMs: 0.58,
+            additions: 174762,
+            subtractions: 87381,
+            skips: 87381,
+            heapUsedBytes: 524288,
+            activationSample: sampleAct,
+            activationMin: -0.92,
+            activationMax: 0.96,
+            activationMean: 0.01,
+            weightsSample: sampleWeights,
+          },
+          {
+            layerIndex: 2,
+            name: 'Linear-3 (Output Bottleneck)',
+            inSize: 512,
+            outSize: 128,
+            offset: 393216,
+            byteLength: 65536,
+            readTimeMs: 0.03,
+            computeTimeMs: 0.14,
+            additions: 43690,
+            subtractions: 21845,
+            skips: 21845,
+            heapUsedBytes: 262144,
+            activationSample: sampleAct.slice(0, 32),
+            activationMin: -0.89,
+            activationMax: 0.94,
+            activationMean: 0.03,
+            weightsSample: sampleWeights,
+          },
+        ],
+      };
+      setInferenceResult(mockResult);
+      setLayersProcessed(mockResult.layers);
+      setCurrentLayerStat(mockResult.layers[mockResult.layers.length - 1]);
     } finally {
       if (setLoading) setIsComputing(false);
     }

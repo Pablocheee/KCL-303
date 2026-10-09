@@ -12,18 +12,25 @@ export const TB303FilterSection: React.FC = React.memo(() => {
     setWaveform,
     baseCutoffCC,
     setBaseCutoffCC,
+    setDirectCutoffCC,
     baseResonanceCC,
     setBaseResonanceCC,
+    setDirectResonanceCC,
     baseEnvModCC,
     setBaseEnvModCC,
+    setDirectEnvModCC,
     baseDecayCC,
     setBaseDecayCC,
+    setDirectDecayCC,
     baseAccentCC,
     setBaseAccentCC,
+    setDirectAccentCC,
     baseDriveCC,
     setBaseDriveCC,
+    setDirectDriveCC,
     baseNarrowCC,
     setBaseNarrowCC,
+    setDirectNarrowCC,
     effectiveCc,
     isMorphEnabled,
     toggleMorphEnabled,
@@ -288,6 +295,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               ? `${Math.round(200 + (baseCutoffCC / 127) * 3300)}Hz`
               : `${Math.round(200 + (effectiveCc.cutoff / 127) * 3300)}Hz`
           }
+          formatValue={(v) => `${Math.round(200 + (v / 127) * 3300)}Hz`}
+          onDirectChange={setDirectCutoffCC}
           onChange={setBaseCutoffCC}
         />
 
@@ -304,6 +313,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               ? `${(2 + (baseResonanceCC / 127) * 22).toFixed(1)}Q`
               : `${(2 + (effectiveCc.resonance / 127) * 22).toFixed(1)}Q`
           }
+          formatValue={(v) => `${(2 + (v / 127) * 22).toFixed(1)}Q`}
+          onDirectChange={setDirectResonanceCC}
           onChange={setBaseResonanceCC}
         />
 
@@ -316,6 +327,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
           disableJitter={isStaticKnobsLocked}
           color="red"
           displayValue={`${Math.round((baseEnvModCC / 127) * 100)}%`}
+          formatValue={(v) => `${Math.round((v / 127) * 100)}%`}
+          onDirectChange={setDirectEnvModCC}
           onChange={setBaseEnvModCC}
         />
 
@@ -332,6 +345,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               ? `${Math.round(80 + (baseDecayCC / 127) * 500)}ms`
               : `${Math.round(80 + (effectiveCc.decay / 127) * 500)}ms`
           }
+          formatValue={(v) => `${Math.round(80 + (v / 127) * 500)}ms`}
+          onDirectChange={setDirectDecayCC}
           onChange={setBaseDecayCC}
         />
 
@@ -344,6 +359,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
           disableJitter={isStaticKnobsLocked}
           color="emerald"
           displayValue={`${Math.round((baseAccentCC / 127) * 100)}%`}
+          formatValue={(v) => `${Math.round((v / 127) * 100)}%`}
+          onDirectChange={setDirectAccentCC}
           onChange={setBaseAccentCC}
         />
 
@@ -360,6 +377,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               ? `${Math.round((baseDriveCC / 127) * 100)}%`
               : `${Math.round((effectiveCc.drive / 127) * 100)}%`
           }
+          formatValue={(v) => `${Math.round((v / 127) * 100)}%`}
+          onDirectChange={setDirectDriveCC}
           onChange={setBaseDriveCC}
         />
 
@@ -376,6 +395,8 @@ export const TB303FilterSection: React.FC = React.memo(() => {
               ? (baseNarrowCC === 127 ? 'MAX (100%)' : `${Math.round((baseNarrowCC / 127) * 100)}%`)
               : (effectiveCc.narrow === 127 ? 'MAX (100%)' : `${Math.round((effectiveCc.narrow / 127) * 100)}%`)
           }
+          formatValue={(v) => (v === 127 ? 'MAX (100%)' : `${Math.round((v / 127) * 100)}%`)}
+          onDirectChange={setDirectNarrowCC}
           onChange={setBaseNarrowCC}
         />
       </div>

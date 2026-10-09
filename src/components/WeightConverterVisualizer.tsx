@@ -27,11 +27,36 @@ export const WeightConverterVisualizer: React.FC = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sampleCount: 48 }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('Offline fallback');
+        return res.json();
+      })
       .then((data) => {
         setSampleWeights(data.originalFloats || []);
         setTernaryWeights(data.ternaryWeights || []);
         setMetrics(data.metrics || null);
+      })
+      .catch(() => {
+        // Client-side fallback for static HTML5 embed (itch.io)
+        const samples = Array.from({ length: 48 }, () => (Math.random() * 2 - 1) * 0.85);
+        const gamma = samples.reduce((acc, v) => acc + Math.abs(v), 0) / samples.length;
+        const ternary = samples.map((v) => Math.max(-1, Math.min(1, Math.round(v / (gamma + 1e-6)))));
+        const pos = ternary.filter((v) => v === 1).length;
+        const neg = ternary.filter((v) => v === -1).length;
+        const zero = ternary.filter((v) => v === 0).length;
+        setSampleWeights(samples);
+        setTernaryWeights(ternary);
+        setMetrics({
+          totalWeights: 48,
+          gamma,
+          sparsityPercent: (zero / 48) * 100,
+          positiveCount: pos,
+          negativeCount: neg,
+          zeroCount: zero,
+          originalSizeBytes: 48 * 4,
+          quantizedSizeBytes: 48 * 1,
+          compressionRatio: '4.00x',
+        });
       })
       .finally(() => setIsConverting(false));
   };
