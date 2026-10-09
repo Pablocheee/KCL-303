@@ -159,15 +159,18 @@ export const DualModeSequencer: React.FC<DualModeSequencerProps> = React.memo(({
   }, []);
 
   // Keep LFO locked to BPM when BPM changes
+  const setPitchLfoRateRef = useRef(setPitchLfoRate);
+  setPitchLfoRateRef.current = setPitchLfoRate;
+
   useEffect(() => {
     if (selectedLfoDivision && selectedLfoDivision !== 'custom') {
       const div = LFO_SYNC_DIVISIONS.find((d) => d.id === selectedLfoDivision);
       if (div) {
         const calculatedRate = (bpm / 60) * div.multiplier;
-        setPitchLfoRate(calculatedRate, false);
+        setPitchLfoRateRef.current(calculatedRate, false);
       }
     }
-  }, [bpm, selectedLfoDivision, setPitchLfoRate]);
+  }, [bpm, selectedLfoDivision]);
 
   const handleSelectLfoDivision = (div: typeof LFO_SYNC_DIVISIONS[0]) => {
     setSelectedLfoDivision(div.id);

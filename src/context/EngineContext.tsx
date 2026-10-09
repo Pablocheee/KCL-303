@@ -1139,85 +1139,91 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     dspAudio.setMorphEnabled(next);
   };
 
-  const setMorphAmount = (val: number) => {
+  const setMorphAmount = useCallback((val: number) => {
     recordContinuousChange(`Morph: ${val}%`);
     morphAmountRef.current = val;
     setMorphAmountState(val);
     dspAudio.setMorphFilter(val / 100, morphTypeRef.current, morphResonanceRef.current);
-  };
+  }, [recordContinuousChange]);
 
-  const setMorphType = (type: FilterMorphType) => {
+  const setMorphType = useCallback((type: FilterMorphType) => {
     pushSnapshot(`Режим морф-фильтра: ${type}`);
     morphTypeRef.current = type;
     setMorphTypeState(type);
     dspAudio.setMorphFilter(morphAmountRef.current / 100, type, morphResonanceRef.current);
-  };
+  }, [pushSnapshot]);
 
-  const setMorphResonance = (res: number) => {
+  const setMorphResonance = useCallback((res: number) => {
     recordContinuousChange(`Morph Res: ${res.toFixed(1)}Q`);
     morphResonanceRef.current = res;
     setMorphResonanceState(res);
     dspAudio.setMorphFilter(morphAmountRef.current / 100, morphTypeRef.current, res);
-  };
+  }, [recordContinuousChange]);
 
   // Continuous Pitch LFO Callbacks (Seamless Gapless Bass Vibrato / Drift)
-  const setIsPitchLfoEnabled = (enabled: boolean) => {
+  const setIsPitchLfoEnabled = useCallback((enabled: boolean) => {
     pushSnapshot(enabled ? 'Pitch LFO: ВКЛ' : 'Pitch LFO: ВЫКЛ');
     isPitchLfoEnabledRef.current = enabled;
     setIsPitchLfoEnabledState(enabled);
     dspAudio.setPitchLfoEnabled(enabled);
     setMidiByteLog((prev) => [`[PITCH LFO] ${enabled ? 'ENABLED' : 'DISABLED'} (${pitchLfoRateRef.current.toFixed(2)}Hz)`, ...prev.slice(0, 5)]);
-  };
+  }, [pushSnapshot]);
 
-  const togglePitchLfoEnabled = () => {
+  const togglePitchLfoEnabled = useCallback(() => {
     const next = !isPitchLfoEnabledRef.current;
     pushSnapshot(next ? 'Pitch LFO: ВКЛ' : 'Pitch LFO: ВЫКЛ');
     isPitchLfoEnabledRef.current = next;
     setIsPitchLfoEnabledState(next);
     dspAudio.setPitchLfoEnabled(next);
     setMidiByteLog((log) => [`[PITCH LFO] ${next ? 'ENABLED' : 'DISABLED'} (${pitchLfoRateRef.current.toFixed(2)}Hz)`, ...log.slice(0, 5)]);
-  };
+  }, [pushSnapshot]);
 
-  const setPitchLfoRate = (rate: number, recordUndo = true) => {
+  const setPitchLfoRate = useCallback((rate: number, recordUndo = true) => {
     const clamped = Math.max(0.05, Math.min(25.0, rate));
     if (recordUndo) {
       recordContinuousChange(`LFO Rate: ${clamped.toFixed(1)}Hz`);
     }
-    pitchLfoRateRef.current = clamped;
-    setPitchLfoRateState(clamped);
+    if (Math.abs(pitchLfoRateRef.current - clamped) > 0.001) {
+      pitchLfoRateRef.current = clamped;
+      setPitchLfoRateState(clamped);
+    }
     dspAudio.setPitchLfoRate(clamped);
-  };
+  }, [recordContinuousChange]);
 
-  const setPitchLfoDepth = (depth: number) => {
+  const setPitchLfoDepth = useCallback((depth: number) => {
     const clamped = Math.max(10, Math.min(1200, depth));
     recordContinuousChange(`LFO Depth: ±${clamped}c`);
-    pitchLfoDepthRef.current = clamped;
-    setPitchLfoDepthState(clamped);
+    if (Math.abs(pitchLfoDepthRef.current - clamped) > 0.1) {
+      pitchLfoDepthRef.current = clamped;
+      setPitchLfoDepthState(clamped);
+    }
     dspAudio.setPitchLfoDepth(clamped);
-  };
+  }, [recordContinuousChange]);
 
-  const setElectronFlux = (val: number) => {
+  const setElectronFlux = useCallback((val: number) => {
     recordContinuousChange(`Electron Flux: ${val}%`);
-    electronFluxRef.current = val;
-    setElectronFluxState(val);
+    if (Math.abs(electronFluxRef.current - val) > 0.1) {
+      electronFluxRef.current = val;
+      setElectronFluxState(val);
+    }
     dspAudio.setElectronFluxAmount(val / 100);
-  };
+  }, [recordContinuousChange]);
 
-  const setElectronMode = (mode: ElectronMode) => {
+  const setElectronMode = useCallback((mode: ElectronMode) => {
     pushSnapshot(`Режим физики: ${mode.toUpperCase()}`);
     electronModeRef.current = mode;
     setElectronModeState(mode);
     dspAudio.setElectronMode(mode);
     setMidiByteLog((prev) => [`[PHYSICS] Switched Electron Mode: ${mode.toUpperCase()}`, ...prev.slice(0, 5)]);
-  };
+  }, [pushSnapshot]);
 
-  const setElectronSolo = (solo: boolean) => {
+  const setElectronSolo = useCallback((solo: boolean) => {
     pushSnapshot(solo ? 'Соло электронов: ВКЛ' : 'Соло электронов: ВЫКЛ');
     electronSoloRef.current = solo;
     setElectronSoloState(solo);
     dspAudio.setElectronSolo(solo);
     setMidiByteLog((prev) => [`[PHYSICS] Electron Particle Audition Solo: ${solo ? 'ON' : 'OFF'}`, ...prev.slice(0, 5)]);
-  };
+  }, [pushSnapshot]);
 
   // Sync physical electron parameters with DSP Audio Engine in real time
   useEffect(() => {
@@ -1229,21 +1235,21 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   }, [specs.temperatureKelvin, specs.tiaGainRf, specs.conductanceDriftStd, electronFlux]);
 
-  const setDspCharacterMode = (mode: DSPCharacterMode) => {
+  const setDspCharacterMode = useCallback((mode: DSPCharacterMode) => {
     pushSnapshot(`DSP Характер: ${mode}`);
     dspCharacterModeRef.current = mode;
     setDspCharacterModeState(mode);
     dspAudio.setCharacterMode(mode);
-  };
+  }, [pushSnapshot]);
 
-  const setWaveform = (wf: 'sawtooth' | 'square') => {
+  const setWaveform = useCallback((wf: 'sawtooth' | 'square') => {
     pushSnapshot(`Форма волны: ${wf.toUpperCase()}`);
     waveformRef.current = wf;
     setWaveformState(wf);
     dspAudio.setWaveform(wf);
-  };
+  }, [pushSnapshot]);
 
-  const setScale = (newScale: ScaleName) => {
+  const setScale = useCallback((newScale: ScaleName) => {
     pushSnapshot(`Гамма: ${newScale}`);
     scaleRef.current = newScale;
     setScaleState(newScale);
@@ -1260,16 +1266,24 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         };
       })
     );
-  };
+  }, [pushSnapshot]);
 
-  const updateSpecField = (field: keyof AnalogHardwareSpecs, value: number) => {
+  // Instant BPM reactivity: updates bpmRef immediately and synchronizes state
+  const setBpm = useCallback((newBpm: number) => {
+    const clamped = Math.max(40, Math.min(260, Math.round(newBpm)));
+    recordContinuousChange(`BPM: ${clamped}`);
+    bpmRef.current = clamped;
+    setBpmState(clamped);
+  }, [recordContinuousChange]);
+
+  const updateSpecField = useCallback((field: keyof AnalogHardwareSpecs, value: number) => {
     recordContinuousChange(`Параметр ${String(field)}`);
     setSpecs((prev) => {
       const updated = { ...prev, [field]: value };
       specsRef.current = updated;
       return updated;
     });
-  };
+  }, [recordContinuousChange]);
 
   // Sync Base Knobs with DSP Engine continuously
   useEffect(() => {
@@ -1316,7 +1330,7 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   // Preset Load Handler
-  const loadPreset = (preset: SynthPreset) => {
+  const loadPreset = useCallback((preset: SynthPreset) => {
     setActivePresetId(preset.id);
     setBaseCutoffCC(preset.baseCutoffCC);
     setBaseResonanceCC(preset.baseResonanceCC);
@@ -1356,7 +1370,12 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     setMidiByteLog((prev) => [`[PRESET] Loaded "${preset.name}" (${preset.category})`, ...prev.slice(0, 5)]);
-  };
+  }, [
+    setBaseCutoffCC, setBaseResonanceCC, setBaseEnvModCC, setBaseDecayCC, setBaseAccentCC,
+    setBaseDriveCC, setBaseNarrowCC, setWaveform, setMorphAmount, setMorphType, setMorphResonance,
+    setIsPitchLfoEnabled, setPitchLfoRate, setPitchLfoDepth, setDspCharacterMode, setElectronFlux,
+    setElectronMode, setBpm, setScale
+  ]);
 
   // Preset Save Handler
   const saveCurrentAsPreset = (name: string, description = 'Custom User Patch'): boolean => {
@@ -1937,14 +1956,6 @@ export const EngineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       nextNoteTimeRef.current += stepDurationSec;
     }
   }, []);
-
-  // Instant BPM reactivity: updates bpmRef immediately and synchronizes state
-  const setBpm = useCallback((newBpm: number) => {
-    const clamped = Math.max(40, Math.min(260, Math.round(newBpm)));
-    recordContinuousChange(`BPM: ${clamped}`);
-    bpmRef.current = clamped;
-    setBpmState(clamped);
-  }, [recordContinuousChange]);
 
   // Clean up timer on unmount
   useEffect(() => {

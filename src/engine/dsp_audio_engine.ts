@@ -107,6 +107,7 @@ export class DSPAudioEngine {
   // State Tracking
   private currentNoteFreq = 130.81;
   private isEnvelopeActive = false;
+  private envelopeEndTime = 0;
 
   constructor() {
     this.precomputeDistortionCurves();
@@ -749,6 +750,7 @@ export class DSPAudioEngine {
       this.vcaGain.gain.cancelScheduledValues(now);
       this.vcaGain.gain.linearRampToValueAtTime(0.00001, now + 0.01);
       this.isEnvelopeActive = false;
+      this.envelopeEndTime = 0;
     }
   }
 
@@ -832,23 +834,15 @@ export class DSPAudioEngine {
         this.mainFilter.Q.value = this.baseResonanceQ;
       }
 
-      try {
-        if (!this.isEnvelopeActive) {
-          this.mainFilter.frequency.setTargetAtTime(this.baseCutoffHz, now, TC);
-        } else {
-          // If envelope ramp is active during note decay, safely cancel and transition to new cutoff floor
-          const freqParam = this.mainFilter.frequency as any;
-          if (typeof freqParam.cancelAndHoldAtTime === 'function') {
-            freqParam.cancelAndHoldAtTime(now);
-          } else {
-            freqParam.cancelScheduledValues(now);
-          }
-          this.mainFilter.frequency.setTargetAtTime(this.baseCutoffHz, now, 0.012);
-        }
-      } catch {
+      // Only update frequency directly if there is no active note envelope running.
+      // During active note playback, triggerStep() continuously schedules each note's
+      // envelope sweep (peakCutoff -> baseFloor) using this.baseCutoffHz at every step (~90ms).
+      // Leaving the active note's envelope untouched ensures the natural 303 decay completes
+      // without freezing the filter open and causing loud resonance ringing during movement!
+      const isEnvelopeRunning = this.isEnvelopeActive && Boolean(this.ctx) && (this.ctx!.currentTime < this.envelopeEndTime);
+      if (!isEnvelopeRunning) {
         try {
-          this.mainFilter.frequency.cancelScheduledValues(now);
-          this.mainFilter.frequency.setValueAtTime(this.baseCutoffHz, now);
+          this.mainFilter.frequency.setTargetAtTime(this.baseCutoffHz, now, TC);
         } catch {
           this.mainFilter.frequency.value = this.baseCutoffHz;
         }
@@ -987,6 +981,8 @@ export class DSPAudioEngine {
 
       const decayDuration = stepData.accent ? Math.max(0.08, dynamicDecayTime * 0.65) : dynamicDecayTime;
       const baseFloor = Math.max(120, this.baseCutoffHz + currentOpeningHz * 0.25);
+      const gateTime = stepData.slide ? stepDurationSec : stepDurationSec * 0.68;
+      this.envelopeEndTime = now + Math.max(gateTime, decayDuration);
 
       this.mainFilter.frequency.cancelScheduledValues(now);
       this.mainFilter.frequency.setValueAtTime(Math.max(100, peakCutoff), now);
@@ -997,7 +993,6 @@ export class DSPAudioEngine {
 
       // VCA Volume Envelope (Punchy 3ms Attack -> Gate Hold -> Clean Decay)
       const targetVolume = stepData.accent ? 0.88 : 0.62;
-      const gateTime = stepData.slide ? stepDurationSec : stepDurationSec * 0.68;
 
       this.vcaGain.gain.cancelScheduledValues(now);
       this.vcaGain.gain.setValueAtTime(0.0001, now);
@@ -1027,6 +1022,7 @@ export class DSPAudioEngine {
       }
     } else {
       this.isEnvelopeActive = false;
+      this.envelopeEndTime = 0;
       this.vcaGain.gain.cancelScheduledValues(now);
       this.vcaGain.gain.linearRampToValueAtTime(0.0001, now + 0.01);
     }

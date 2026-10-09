@@ -284,6 +284,12 @@ export const TB303Touchpad: React.FC = () => {
     );
   }, [soundProfile, isMorphEnabled, setAllBaseKnobsCC]);
 
+  const flushFinalStateRef = useRef(flushFinalStateToContext);
+  flushFinalStateRef.current = flushFinalStateToContext;
+
+  const processSimultaneousMotionRef = useRef(processSimultaneousMotion);
+  processSimultaneousMotionRef.current = processSimultaneousMotion;
+
   // =========================================================================
   // 1. SMARTPHONE DIRECT TOUCH (Touch events with touch-action: none)
   // =========================================================================
@@ -315,7 +321,7 @@ export const TB303Touchpad: React.FC = () => {
         secondDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
       }
 
-      processSimultaneousMotion(normX, normY, secondDist);
+      processSimultaneousMotionRef.current(normX, normY, secondDist);
     };
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -337,7 +343,7 @@ export const TB303Touchpad: React.FC = () => {
         secondDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
       }
 
-      processSimultaneousMotion(normX, normY, secondDist);
+      processSimultaneousMotionRef.current(normX, normY, secondDist);
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
@@ -347,9 +353,9 @@ export const TB303Touchpad: React.FC = () => {
       if (e.touches.length === 0) {
         setIsTouchActive(false);
         if (!isHold) {
-          processSimultaneousMotion(0.5, 0.5, 0);
+          processSimultaneousMotionRef.current(0.5, 0.5, 0);
         }
-        flushFinalStateToContext();
+        flushFinalStateRef.current();
       }
     };
 
@@ -364,7 +370,7 @@ export const TB303Touchpad: React.FC = () => {
       padEl.removeEventListener('touchend', handleTouchEnd);
       padEl.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [isHold, processSimultaneousMotion, flushFinalStateToContext, updatePadRect]);
+  }, [isHold, updatePadRect]);
 
   // =========================================================================
   // 2. DESKTOP TRACKPAD: POINTER LOCK WITH INSTANT MOUSE CLICK EXIT
@@ -385,7 +391,7 @@ export const TB303Touchpad: React.FC = () => {
           y: rect.height * (1 - coordsRef.current.y),
         };
       } else {
-        flushFinalStateToContext();
+        flushFinalStateRef.current();
       }
     };
 
@@ -399,7 +405,7 @@ export const TB303Touchpad: React.FC = () => {
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
       document.removeEventListener('pointerlockerror', handlePointerLockError);
     };
-  }, [updatePadRect, flushFinalStateToContext]);
+  }, [updatePadRect]);
 
   // Exit pointer lock immediately on any mouse click/down while locked
   useEffect(() => {
@@ -435,7 +441,7 @@ export const TB303Touchpad: React.FC = () => {
       const normX = virtualPosRef.current.x / width;
       const normY = 1 - virtualPosRef.current.y / height;
 
-      processSimultaneousMotion(normX, normY, 0);
+      processSimultaneousMotionRef.current(normX, normY, 0);
     };
 
     if (isPointerLocked) {
@@ -444,7 +450,7 @@ export const TB303Touchpad: React.FC = () => {
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, [isPointerLocked, processSimultaneousMotion]);
+  }, [isPointerLocked]);
 
   // Wheel gestures (2-finger trackpad scroll on laptops)
   useEffect(() => {
